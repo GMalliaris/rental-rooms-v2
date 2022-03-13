@@ -1,0 +1,28 @@
+version: '3.1'
+
+networks:
+  backend:
+
+services:
+  postgres-db:
+    image: postgres:14.2-alpine
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./dockerfiles/postgres:/var/lib/postgresql/data
+    networks:
+      backend:
+    environment:
+      POSTGRES_DB: rental-rooms
+      POSTGRES_USER: rental-rooms
+      POSTGRES_PASSWORD: rental-rooms
+
+  app:
+    build: .
+    ports:
+      - "8080:8080"
+    networks:
+      backend:
+    depends_on:
+      - postgres-db
