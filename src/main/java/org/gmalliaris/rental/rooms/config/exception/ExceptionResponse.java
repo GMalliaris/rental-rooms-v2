@@ -1,4 +1,4 @@
-package org.gmalliaris.rental.rooms.dto;
+package org.gmalliaris.rental.rooms.config.exception;
 
 import org.springframework.http.HttpStatus;
 
