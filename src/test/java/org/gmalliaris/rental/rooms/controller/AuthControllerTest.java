@@ -45,7 +45,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.httpStatus").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.messages.length()").value(4))
                 .andExpect(jsonPath("$.messages.email")
-                        .value("Email is required and must not be blank"))
+                        .value("Email is required"))
                 .andExpect(jsonPath("$.messages.firstName")
                         .value("First name is required and must not be blank"))
                 .andExpect(jsonPath("$.messages.password")
@@ -99,7 +99,7 @@ class AuthControllerTest {
 
     @Test
     void loginTest_requiredValidationErrors() throws Exception {
-        var body = new LoginRequest(" ", " ");
+        var body = new LoginRequest(null, " ");
 
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -108,7 +108,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.httpStatus").value("BAD_REQUEST"))
                 .andExpect(jsonPath("$.messages.length()").value(2))
                 .andExpect(jsonPath("$.messages.username")
-                        .value("Username is required and must not be blank"))
+                        .value("Username is required"))
                 .andExpect(jsonPath("$.messages.password")
                         .value("Password is required and must not be blank"));
     }
