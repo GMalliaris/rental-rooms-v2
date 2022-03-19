@@ -14,7 +14,7 @@ public class CreateUserRequest {
     @StrongPassword(message = "Password must contain at least one upper-case letter, one lower-case letter, one digit, one special character and must be at least 10 characters long")
     private final String password;
 
-    @NotBlank(message = "Email is required and must not be blank")
+    @NotNull(message = "Email is required")
     @Email(message = "Email must be a valid email address")
     private final String email;
 

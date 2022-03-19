@@ -4,10 +4,11 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 
 import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
 
 public class LoginRequest {
 
-    @NotBlank(message = "Username is required and must not be blank")
+    @NotNull(message = "Username is required")
     @Email(message = "Username must be a valid email address")
     private final String username;
 
