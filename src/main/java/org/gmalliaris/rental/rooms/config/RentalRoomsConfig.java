@@ -11,6 +11,7 @@ public class RentalRoomsConfig {
     @Bean
     @Primary
     public ObjectMapper objectMapper(){
-        return new ObjectMapper();
+        return new ObjectMapper()
+                .findAndRegisterModules();
     }
 }

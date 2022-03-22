@@ -1,11 +1,13 @@
 package org.gmalliaris.rental.rooms.dto;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.util.PhoneNumber;
 import org.gmalliaris.rental.rooms.util.StrongPassword;
 
-import javax.validation.constraints.*;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 public class CreateUserRequest {
@@ -30,7 +32,6 @@ public class CreateUserRequest {
     @Size(min = 1, max = 2, message = "Roles list must contain either one or two roles")
     private final List<@NotNull UserRoleName> roles;
 
-    @JsonCreator
     public CreateUserRequest(String password, String email, String firstName, String lastName, String phoneNumber, List<UserRoleName> roles) {
         this.password = password;
         this.email = email;
