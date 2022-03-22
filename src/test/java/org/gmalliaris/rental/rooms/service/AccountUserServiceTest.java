@@ -38,6 +38,9 @@ class AccountUserServiceTest {
     @Mock
     private BCryptPasswordEncoder bCryptPasswordEncoder;
 
+    @Mock
+    private JwtService jwtService;
+
     @Test
     void createAccountUserTest_throwsBecauseUsedEmail(){
         when(accountUserRepository.countByEmail(anyString()))
@@ -170,9 +173,18 @@ class AccountUserServiceTest {
         when(bCryptPasswordEncoder.matches(anyString(), anyString()))
                 .thenReturn(true);
 
+        when(jwtService.generateAccessToken(any(AccountUser.class)))
+                .thenReturn("access");
+        when(jwtService.generateRefreshToken(any(AccountUser.class)))
+                .thenReturn("refresh");
+
         var loginRequest = new LoginRequest("test@example.eg", "12345678");
 
-        accountUserService.login(loginRequest);
+        var result = accountUserService.login(loginRequest);
+        assertNotNull(result);
+        assertEquals("access", result.getAccessToken());
+        assertEquals("refresh", result.getRefreshToken());
+
         verify(accountUserRepository).findByEmail(loginRequest.getUsername());
         verify(bCryptPasswordEncoder).matches(loginRequest.getPassword(), mockUser.getPassword());
     }

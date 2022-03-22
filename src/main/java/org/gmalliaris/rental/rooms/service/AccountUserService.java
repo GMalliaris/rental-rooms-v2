@@ -4,6 +4,7 @@ import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
+import org.gmalliaris.rental.rooms.dto.LoginResponse;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
 import org.springframework.http.HttpStatus;
@@ -16,11 +17,13 @@ public class AccountUserService {
     private final AccountUserRepository accountUserRepository;
     private final UserRoleService userRoleService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final JwtService jwtService;
 
-    public AccountUserService(AccountUserRepository accountUserRepository, UserRoleService userRoleService, BCryptPasswordEncoder bCryptPasswordEncoder) {
+    public AccountUserService(AccountUserRepository accountUserRepository, UserRoleService userRoleService, BCryptPasswordEncoder bCryptPasswordEncoder, JwtService jwtService) {
         this.accountUserRepository = accountUserRepository;
         this.userRoleService = userRoleService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
+        this.jwtService = jwtService;
     }
 
     public void createAccountUser(CreateUserRequest request){
@@ -53,7 +56,7 @@ public class AccountUserService {
         accountUserRepository.save(user);
     }
 
-    public void login(LoginRequest loginRequest){
+    public LoginResponse login(LoginRequest loginRequest){
         var user = accountUserRepository.findByEmail(loginRequest.getUsername())
                 .orElseThrow(() -> {
                     throw new ApiException(HttpStatus.BAD_REQUEST, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
@@ -62,5 +65,9 @@ public class AccountUserService {
         if (!bCryptPasswordEncoder.matches(loginRequest.getPassword(), encryptedPwd)){
             throw new ApiException(HttpStatus.BAD_REQUEST, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
         }
+
+        var accessToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
+        return new LoginResponse(accessToken, refreshToken);
     }
 }
