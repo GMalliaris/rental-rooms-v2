@@ -2,7 +2,7 @@ package org.gmalliaris.rental.rooms.controller;
 
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
-import org.gmalliaris.rental.rooms.dto.LoginResponse;
+import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,7 +29,7 @@ public class AuthController {
 
     @PostMapping("/login")
     @Transactional(readOnly = true)
-    public LoginResponse registerAccountUser(@RequestBody @Valid LoginRequest loginRequest){
+    public AccountUserAuthResponse registerAccountUser(@RequestBody @Valid LoginRequest loginRequest){
         return accountUserService.login(loginRequest);
     }
 

@@ -1,11 +1,11 @@
 package org.gmalliaris.rental.rooms.dto;
 
-public class LoginResponse {
+public class AccountUserAuthResponse {
 
     private final String accessToken;
     private final String refreshToken;
 
-    public LoginResponse(String accessToken, String refreshToken) {
+    public AccountUserAuthResponse(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
     }

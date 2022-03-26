@@ -4,7 +4,7 @@ import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
-import org.gmalliaris.rental.rooms.dto.LoginResponse;
+import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
 import org.springframework.http.HttpStatus;
@@ -70,7 +70,7 @@ public class AccountUserService {
     }
 
     @Transactional(readOnly = true)
-    public LoginResponse login(LoginRequest loginRequest){
+    public AccountUserAuthResponse login(LoginRequest loginRequest){
         var user = findByEmail(loginRequest.getUsername());
         var encryptedPwd = user.getPassword();
         if (!bCryptPasswordEncoder.matches(loginRequest.getPassword(), encryptedPwd)){
@@ -79,7 +79,7 @@ public class AccountUserService {
 
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateRefreshToken(user);
-        return new LoginResponse(accessToken, refreshToken);
+        return new AccountUserAuthResponse(accessToken, refreshToken);
     }
 
     @Transactional(readOnly = true, propagation = Propagation.MANDATORY)
