@@ -1,16 +1,22 @@
 package org.gmalliaris.rental.rooms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.gmalliaris.rental.rooms.config.WebSecurityConfig;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
+import org.gmalliaris.rental.rooms.service.AccountUserSecurityService;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
@@ -22,6 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
+@ActiveProfiles("test-security")
 class AuthControllerTest {
 
     @MockBean
@@ -128,6 +135,7 @@ class AuthControllerTest {
     }
 
     @Test
+    @WithMockUser(roles = {"TEST", "TEST_AGAIN"})
     void loginTest() throws Exception {
         var body = new LoginRequest("test@example.eg", "12345678");
 

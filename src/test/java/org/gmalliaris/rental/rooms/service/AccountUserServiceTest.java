@@ -18,6 +18,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -187,5 +188,35 @@ class AccountUserServiceTest {
 
         verify(accountUserRepository).findByEmail(loginRequest.getUsername());
         verify(bCryptPasswordEncoder).matches(loginRequest.getPassword(), mockUser.getPassword());
+    }
+
+    @Test
+    void findAccountUserByIdTest_throws(){
+
+        var randomId = UUID.randomUUID();
+
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.empty());
+
+        var exception = assertThrows(ApiException.class,
+                () -> accountUserService.findAccountUserById(randomId));
+
+        var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
+                AccountUser.class, randomId);
+        assertEquals(errMsg, exception.getMessage());
+    }
+
+    @Test
+    void findAccountUserByIdTest(){
+
+        var randomId = UUID.randomUUID();
+
+        var user = mock(AccountUser.class);
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(user));
+
+        var result = accountUserService.findAccountUserById(randomId);
+        assertNotNull(result);
+        assertEquals(result, user);
     }
 }

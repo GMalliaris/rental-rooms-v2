@@ -5,6 +5,7 @@ import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.dto.LoginResponse;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
@@ -21,11 +22,13 @@ public class AuthController {
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
     public void registerAccountUser(@RequestBody @Valid CreateUserRequest createUserRequest){
         accountUserService.createAccountUser(createUserRequest);
     }
 
     @PostMapping("/login")
+    @Transactional(readOnly = true)
     public LoginResponse registerAccountUser(@RequestBody @Valid LoginRequest loginRequest){
         return accountUserService.login(loginRequest);
     }

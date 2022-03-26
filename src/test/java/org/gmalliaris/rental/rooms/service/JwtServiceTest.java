@@ -1,163 +1,96 @@
 package org.gmalliaris.rental.rooms.service;
 
-import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
+import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import javax.crypto.SecretKey;
-import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mockStatic;
 
 class JwtServiceTest {
 
     private final JwtService jwtService = new JwtService();
 
     @Test
-    void generateAccessTokenTest(){
+    void generateAccessTokenTest() {
 
-        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", 120);
+        var accessTokenDuration = 120;
+        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", accessTokenDuration);
         var accountUser = new AccountUser();
-        accountUser.setId(UUID.randomUUID());
+        accountUser.setEmail("random@example.eg");
 
-        var token = jwtService.generateAccessToken(accountUser);
-        assertNotNull(token);
+        try (var jwtUtils = mockStatic(JwtUtils.class)) {
+            jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class),
+                            any(Date.class), any(JwtType.class), anyString()))
+                    .thenReturn("generatedToken");
+
+            var token = jwtService.generateAccessToken(accountUser);
+            assertNotNull(token);
+            assertEquals("generatedToken", token);
+
+            var dateCapturer = ArgumentCaptor.forClass(Date.class);
+            var typeCapturer = ArgumentCaptor.forClass(JwtType.class);
+            var stringCapturer = ArgumentCaptor.forClass(String.class);
+            jwtUtils.verify(() -> JwtUtils.generateToken(
+                    dateCapturer.capture(), dateCapturer.capture(),
+                    typeCapturer.capture(), stringCapturer.capture()));
+            var dates = dateCapturer.getAllValues();
+            var issuedAt = dates.get(0);
+            var expiration = dates.get(1);
+            var type = typeCapturer.getValue();
+            var email = stringCapturer.getValue();
+            assertNotNull(issuedAt);
+            assertNotNull(expiration);
+            var diff = ChronoUnit.SECONDS.between(issuedAt.toInstant(), expiration.toInstant());
+            assertEquals(accessTokenDuration, diff);
+            assertEquals("random@example.eg", email);
+            assertEquals(JwtType.ACCESS, type);
+        }
     }
 
     @Test
-    void generateRefreshTokenTest(){
+    void generateRefreshTokenTest() {
 
-        ReflectionTestUtils.setField(jwtService, "REFRESH_DURATION_MINUTES", 120);
+        var refreshTokenDuration = 60;
+        ReflectionTestUtils.setField(jwtService, "REFRESH_DURATION_MINUTES", refreshTokenDuration);
         var accountUser = new AccountUser();
-        accountUser.setId(UUID.randomUUID());
+        accountUser.setEmail("random@example.eg");
 
-        var token = jwtService.generateRefreshToken(accountUser);
-        assertNotNull(token);
+        try (var jwtUtils = mockStatic(JwtUtils.class)) {
+            jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class),
+                            any(Date.class), any(JwtType.class), anyString()))
+                    .thenReturn("generatedToken");
+
+            var token = jwtService.generateRefreshToken(accountUser);
+            assertNotNull(token);
+            assertEquals("generatedToken", token);
+
+            var dateCapturer = ArgumentCaptor.forClass(Date.class);
+            var typeCapturer = ArgumentCaptor.forClass(JwtType.class);
+            var stringCapturer = ArgumentCaptor.forClass(String.class);
+            jwtUtils.verify(() -> JwtUtils.generateToken(
+                    dateCapturer.capture(), dateCapturer.capture(),
+                    typeCapturer.capture(), stringCapturer.capture()));
+            var dates = dateCapturer.getAllValues();
+            var issuedAt = dates.get(0);
+            var expiration = dates.get(1);
+            var type = typeCapturer.getValue();
+            var email = stringCapturer.getValue();
+            assertNotNull(issuedAt);
+            assertNotNull(expiration);
+            var diff = ChronoUnit.MINUTES.between(issuedAt.toInstant(), expiration.toInstant());
+            assertEquals(refreshTokenDuration, diff);
+            assertEquals("random@example.eg", email);
+            assertEquals(JwtType.REFRESH, type);
+        }
     }
-
-    @Test
-    void parseTokenTest_malformedToken(){
-
-        var invalidToken = "invalid";
-        var exception = assertThrows(JwtException.class,
-                () -> jwtService.parseToken(invalidToken, JwtType.ACCESS));
-        assertEquals(MalformedJwtException.class, exception.getClass());
-    }
-
-    @Test
-    void parseTokenTest_invalidSignature(){
-
-        var iss = (String) ReflectionTestUtils.getField(jwtService, "ISS");
-        var key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-
-        var token = Jwts.builder()
-                .setIssuer(iss)
-                .setSubject(JwtType.ACCESS.getValue())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> jwtService.parseToken(token, JwtType.ACCESS));
-        assertEquals(SignatureException.class, exception.getClass());
-    }
-
-    @Test
-    void parseTokenTest_invalidIssuer(){
-
-        var key = (SecretKey) ReflectionTestUtils.getField(jwtService, "SIGN_KEY");
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-
-        var token = Jwts.builder()
-                .setIssuer("invalid")
-                .setSubject(JwtType.ACCESS.getValue())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> jwtService.parseToken(token, JwtType.ACCESS));
-        assertEquals(IncorrectClaimException.class, exception.getClass());
-    }
-
-    @Test
-    void parseTokenTest_invalidSubject(){
-
-        var key = (SecretKey) ReflectionTestUtils.getField(jwtService, "SIGN_KEY");
-        var iss = (String) ReflectionTestUtils.getField(jwtService, "ISS");
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-
-        var token = Jwts.builder()
-                .setIssuer(iss)
-                .setSubject(JwtType.REFRESH.getValue())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> jwtService.parseToken(token, JwtType.ACCESS));
-        assertEquals(IncorrectClaimException.class, exception.getClass());
-    }
-
-    @Test
-    void parseTokenTest_expired(){
-
-        var key = (SecretKey) ReflectionTestUtils.getField(jwtService, "SIGN_KEY");
-        var iss = (String) ReflectionTestUtils.getField(jwtService, "ISS");
-        var now = Instant.now();
-        var exp = now.minusSeconds(600);
-
-        var token = Jwts.builder()
-                .setIssuer(iss)
-                .setSubject(JwtType.ACCESS.getValue())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> jwtService.parseToken(token, JwtType.ACCESS));
-        assertEquals(ExpiredJwtException.class, exception.getClass());
-    }
-
-    @Test
-    void parseTokenTest(){
-
-        var key = (SecretKey) ReflectionTestUtils.getField(jwtService, "SIGN_KEY");
-        var iss = (String) ReflectionTestUtils.getField(jwtService, "ISS");
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-        var uuid = UUID.randomUUID();
-
-        var token = Jwts.builder()
-                .setIssuer(iss)
-                .setSubject(JwtType.ACCESS.getValue())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .setId(uuid.toString())
-                .signWith(key)
-                .compact();
-
-        var result = jwtService.parseToken(token, JwtType.ACCESS);
-        assertNotNull(result);
-        assertEquals(iss, result.getIssuer());
-        assertEquals(JwtType.ACCESS.getValue(), result.getSubject());
-        assertEquals(Date.from(now).toString(), result.getIssuedAt().toString());
-        assertEquals(Date.from(exp).toString(), result.getExpiration().toString());
-        assertEquals(uuid.toString(), result.getId());
-    }
-
 }
