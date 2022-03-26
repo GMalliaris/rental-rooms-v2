@@ -2,9 +2,9 @@ package org.gmalliaris.rental.rooms.service;
 
 import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
+import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
-import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
 import org.springframework.http.HttpStatus;
@@ -92,5 +92,15 @@ public class AccountUserService {
                             AccountUser.class, userId);
                     throw new ApiException(HttpStatus.NOT_FOUND, errMsg);
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public AccountUserAuthResponse refreshAuthTokens(UUID userId, String authHeader){
+
+        var user = findAccountUserById(userId);
+
+        var accessToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateNewRefreshToken(user, authHeader);
+        return new AccountUserAuthResponse(accessToken, refreshToken);
     }
 }

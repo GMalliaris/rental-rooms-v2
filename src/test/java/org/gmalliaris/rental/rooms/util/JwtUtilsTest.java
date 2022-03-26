@@ -285,4 +285,124 @@ class JwtUtilsTest {
             jwtUtils.verify(() -> JwtUtils.extractUserEmailFromToken("test", ACCESS));
         }
     }
+
+    @Test
+    void extractExpirationFromTokenTest_nullBody(){
+
+        var token = "random-token";
+        var type = JwtType.REFRESH;
+        try (var jwtUtils = mockStatic(JwtUtils.class)){
+            var mockJws = mock(Jws.class);
+            jwtUtils.when(() -> JwtUtils.extractClaims(anyString(), any(JwtType.class)))
+                    .thenReturn(mockJws);
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+                    .thenCallRealMethod();
+
+            var result = JwtUtils.extractExpirationFromToken(token, type);
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+            jwtUtils.verify(() -> JwtUtils.extractClaims(token, type));
+        }
+    }
+
+    @Test
+    void extractExpirationFromTokenTest_nullClaimEmail(){
+
+        var token = "random-token";
+        var type = JwtType.REFRESH;
+        try (var jwtUtils = mockStatic(JwtUtils.class)){
+            var mockJws = mock(Jws.class);
+            when(mockJws.getBody())
+                    .thenReturn(mock(Claims.class));
+            jwtUtils.when(() -> JwtUtils.extractClaims(anyString(), any(JwtType.class)))
+                    .thenReturn(mockJws);
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+                    .thenCallRealMethod();
+
+            var result = JwtUtils.extractExpirationFromToken(token, type);
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+            jwtUtils.verify(() -> JwtUtils.extractClaims(token, type));
+        }
+    }
+
+    @Test
+    void extractExpirationFromTokenTest(){
+
+        var token = "random-token";
+        var type = JwtType.REFRESH;
+        var now = Date.from(Instant.now());
+        try (var jwtUtils = mockStatic(JwtUtils.class)){
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getExpiration())
+                    .thenReturn(now);
+
+            var mockJws = mock(Jws.class);
+            when(mockJws.getBody())
+                    .thenReturn(mockClaims);
+            jwtUtils.when(() -> JwtUtils.extractClaims(anyString(), any(JwtType.class)))
+                    .thenReturn(mockJws);
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+                    .thenCallRealMethod();
+
+            var result = JwtUtils.extractExpirationFromToken(token, type);
+            assertNotNull(result);
+            assertTrue(result.isPresent());
+            assertEquals(now, result.get());
+            jwtUtils.verify(() -> JwtUtils.extractClaims(token, type));
+        }
+    }
+
+    @Test
+    void extractExpirationFromHeaderTest_nullHeader(){
+        var result = JwtUtils.extractExpirationFromHeader(null, ACCESS);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void extractExpirationFromHeaderTest_invalidHeader(){
+        var invalidHeader = "Bearer- test";
+        var result = JwtUtils.extractExpirationFromHeader(invalidHeader, ACCESS);
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void extractExpirationFromHeaderTest_throwsJwtException(){
+        var invalidHeader = "Bearer test";
+
+        try (var jwtUtils = mockStatic(JwtUtils.class)){
+
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+                    .thenThrow(JwtException.class);
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+                    .thenCallRealMethod();
+
+            var result = JwtUtils.extractExpirationFromHeader(invalidHeader, ACCESS);
+            assertNotNull(result);
+            assertTrue(result.isEmpty());
+            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test", ACCESS));
+        }
+    }
+
+    @Test
+    void extractExpirationFromHeaderTest(){
+        var invalidHeader = "Bearer test";
+        var now = Date.from(Instant.now());
+
+        try (var jwtUtils = mockStatic(JwtUtils.class)){
+
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.of(now));
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+                    .thenCallRealMethod();
+
+            var result = JwtUtils.extractExpirationFromHeader(invalidHeader, ACCESS);
+            assertNotNull(result);
+            assertTrue(result.isPresent());
+            assertEquals(now, result.get());
+            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test", ACCESS));
+        }
+    }
 }

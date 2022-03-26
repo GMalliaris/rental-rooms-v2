@@ -7,14 +7,15 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.*;
 
 class JwtServiceTest {
 
@@ -91,6 +92,60 @@ class JwtServiceTest {
             assertEquals(refreshTokenDuration, diff);
             assertEquals("random@example.eg", email);
             assertEquals(JwtType.REFRESH, type);
+        }
+    }
+
+    @Test
+    void generateNewRefreshTokenTest_throws(){
+
+        var authHeader = "header";
+        var exception = assertThrows(IllegalStateException.class,
+                () -> jwtService.generateNewRefreshToken(mock(AccountUser.class), authHeader));
+        var errMsg = "Invalid token, expiration is missing.";
+        assertEquals(errMsg, exception.getMessage());
+    }
+
+    @Test
+    void generateNewRefreshTokenTest_needsRefresh(){
+
+        var authHeader = "header";
+        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", Integer.MAX_VALUE);
+
+        try(var jwtUtils = mockStatic(JwtUtils.class)){
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+                    .thenAnswer( a -> {
+                       var exp = Date.from(Instant.now());
+                       return Optional.of(exp);
+                    });
+            jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class), any(Date.class),
+                    any(JwtType.class), anyString()))
+                    .thenReturn("refreshToken");
+
+            var user = mock(AccountUser.class);
+            when(user.getEmail()).thenReturn("email@example.eg");
+            var result = jwtService.generateNewRefreshToken(user, authHeader);
+            assertNotNull(result);
+            assertEquals("refreshToken", result);
+        }
+    }
+
+    @Test
+    void generateNewRefreshTokenTest_notNeedRefresh(){
+
+        var authHeader = "header";
+        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", Integer.MIN_VALUE);
+
+        try(var jwtUtils = mockStatic(JwtUtils.class)){
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+                    .thenAnswer( a -> {
+                        var exp = Date.from(Instant.now());
+                        return Optional.of(exp);
+                    });
+
+            var result = jwtService.generateNewRefreshToken(mock(AccountUser.class), authHeader);
+            assertNull(result);
+            jwtUtils.verify(() -> JwtUtils.generateToken(any(Date.class), any(Date.class),
+                            any(JwtType.class), anyString()), never());
         }
     }
 }

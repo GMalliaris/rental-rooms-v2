@@ -72,4 +72,31 @@ public final class JwtUtils {
             return Optional.empty();
         }
     }
+
+    public static Optional<Date> extractExpirationFromToken(String token, JwtType type)
+            throws JwtException{
+
+        var claims = extractClaims(token, type).getBody();
+        if (claims == null){
+            return Optional.empty();
+        }
+        return Optional.ofNullable(claims.getExpiration());
+    }
+
+    public static Optional<Date> extractExpirationFromHeader(String authorizationHeader, JwtType type){
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)){
+            return Optional.empty();
+        }
+
+        var token = authorizationHeader.substring(BEARER_PREFIX.length());
+        try {
+            return extractExpirationFromToken(token, type);
+        }
+        catch (JwtException exception) {
+            logger.debug("Failed to parse jwt: exception of class {}", exception.getClass());
+            logger.debug(exception.getMessage());
+            return Optional.empty();
+        }
+    }
 }

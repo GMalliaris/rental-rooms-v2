@@ -46,4 +46,22 @@ public class JwtService {
         return JwtUtils.generateToken(Date.from(created), Date.from(expiration),
                 type, user.getEmail());
     }
+
+    public String generateNewRefreshToken(AccountUser user, String authHeader){
+
+        var expiration = JwtUtils.extractExpirationFromHeader(authHeader, JwtType.REFRESH)
+                .orElseThrow(() -> {
+                    var errMsg = "Invalid token, expiration is missing.";
+                    throw new IllegalStateException(errMsg);
+                });
+
+        var now = Instant.now();
+
+        var delay = 60;
+        var diff = ChronoUnit.SECONDS.between(now, expiration.toInstant());
+        if (diff + delay < ACCESS_DURATION_SECONDS){
+            return generateToken(user, JwtType.REFRESH);
+        }
+        return null;
+    }
 }

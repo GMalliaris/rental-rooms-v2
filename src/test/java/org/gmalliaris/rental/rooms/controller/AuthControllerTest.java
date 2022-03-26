@@ -1,17 +1,15 @@
 package org.gmalliaris.rental.rooms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.gmalliaris.rental.rooms.config.WebSecurityConfig;
+import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
-import org.gmalliaris.rental.rooms.service.AccountUserSecurityService;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
+import org.gmalliaris.rental.rooms.service.SecurityService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
@@ -20,9 +18,14 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,6 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(AuthController.class)
 @ActiveProfiles("test-security")
 class AuthControllerTest {
+
+    @MockBean
+    private SecurityService securityService;
 
     @MockBean
     private AccountUserService accountUserService;
@@ -135,7 +141,6 @@ class AuthControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = {"TEST", "TEST_AGAIN"})
     void loginTest() throws Exception {
         var body = new LoginRequest("test@example.eg", "12345678");
 
@@ -150,5 +155,36 @@ class AuthControllerTest {
         var request = argCaptor.getValue();
         assertEquals(body.getUsername(), request.getUsername());
         assertEquals(body.getPassword(), request.getPassword());
+    }
+
+    @Test
+    void refreshAuthTokens_isForbidden() throws Exception {
+        mockMvc.perform(get("/auth/refresh"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser
+    void refreshAuthTokens() throws Exception {
+        var randomId = UUID.randomUUID();
+        when(securityService.getCurrentUserId()).thenReturn(randomId);
+
+        var accessToken = "access";
+        var refreshToken = "refresh";
+        var authHeader = "Authorization";
+        var authHeaderValue = "value";
+
+        var authResponse = new AccountUserAuthResponse(accessToken, refreshToken);
+        when(accountUserService.refreshAuthTokens(any(UUID.class), anyString()))
+                .thenReturn(authResponse);
+
+        mockMvc.perform(get("/auth/refresh")
+                        .header(authHeader, authHeaderValue))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").value(accessToken))
+                .andExpect(jsonPath("$.refreshToken").value(refreshToken));
+
+        verify(securityService).getCurrentUserId();
+        verify(accountUserService).refreshAuthTokens(randomId, authHeaderValue);
     }
 }

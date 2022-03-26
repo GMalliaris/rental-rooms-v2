@@ -219,4 +219,30 @@ class AccountUserServiceTest {
         assertNotNull(result);
         assertEquals(result, user);
     }
+
+    @Test
+    void refreshAuthTokensTest(){
+        var randomId = UUID.randomUUID();
+        var header = "Header";
+
+        var user = mock(AccountUser.class);
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(user));
+
+        var access = "access";
+        var refresh = "refresh";
+        when(jwtService.generateAccessToken(any(AccountUser.class)))
+                .thenReturn(access);
+        when(jwtService.generateNewRefreshToken(any(AccountUser.class), anyString()))
+                .thenReturn(refresh);
+
+        var result = accountUserService.refreshAuthTokens(randomId, header);
+        assertNotNull(result);
+        assertEquals(access, result.getAccessToken());
+        assertEquals(refresh, result.getRefreshToken());
+
+        verify(accountUserRepository).findById(randomId);
+        verify(jwtService).generateAccessToken(user);
+        verify(jwtService).generateNewRefreshToken(user, header);
+    }
 }
