@@ -1,6 +1,6 @@
 package org.gmalliaris.rental.rooms.controller;
 
-import org.gmalliaris.rental.rooms.config.RentalRoomsConfig;
+import org.gmalliaris.rental.rooms.UnitTestConfig;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.entity.UserRole;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AccountUserController.class)
-@Import(RentalRoomsConfig.class)
+@Import(UnitTestConfig.class)
 @ActiveProfiles("test-security")
 class AccountUserControllerTest {
 

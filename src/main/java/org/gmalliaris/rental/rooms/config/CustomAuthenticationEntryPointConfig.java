@@ -15,13 +15,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
-public class CustomAuthenticationEntryPoint implements AuthenticationEntryPoint {
+public class CustomAuthenticationEntryPointConfig implements AuthenticationEntryPoint {
 
-    private static final Logger logger = LoggerFactory.getLogger(CustomAuthenticationEntryPoint.class);
+    private static final Logger logger = LoggerFactory.getLogger(CustomAuthenticationEntryPointConfig.class);
 
     private final ObjectMapper objectMapper;
 
-    public CustomAuthenticationEntryPoint(ObjectMapper objectMapper) {
+    public CustomAuthenticationEntryPointConfig(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
