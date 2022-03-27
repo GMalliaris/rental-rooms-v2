@@ -1,8 +1,8 @@
 package org.gmalliaris.rental.rooms.controller;
 
+import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
-import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.gmalliaris.rental.rooms.service.SecurityService;
 import org.springframework.http.HttpStatus;

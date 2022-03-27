@@ -2,6 +2,7 @@ package org.gmalliaris.rental.rooms.config.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -19,6 +20,13 @@ public class ExceptionControllerAdvice {
     public ExceptionResponse exception(Exception exception) {
         exception.printStackTrace();
         return new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(AccessDeniedException.class)
+    public ExceptionResponse accessDeniedException(AccessDeniedException exception) {
+        exception.printStackTrace();
+        return new ExceptionResponse(HttpStatus.UNAUTHORIZED, "Access is denied.");
     }
 
     @ExceptionHandler(ApiException.class)

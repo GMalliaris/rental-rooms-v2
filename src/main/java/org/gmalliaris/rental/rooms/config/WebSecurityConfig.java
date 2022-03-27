@@ -17,17 +17,19 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableGlobalMethodSecurity(prePostEnabled = true, jsr250Enabled = true)
 @Profile("!test-security")
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     protected static final String[] PERMITTED_ENDPOINTS = new String[]{"/auth/register", "/auth/login"};
     private final AccountUserSecurityService accountUserService;
     private final JwtAuthFilter jwtAuthFilter;
+    private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
-    public WebSecurityConfig(AccountUserSecurityService accountUserService, JwtAuthFilter jwtAuthFilter) {
+    public WebSecurityConfig(AccountUserSecurityService accountUserService, JwtAuthFilter jwtAuthFilter, CustomAuthenticationEntryPoint customAuthenticationEntryPoint) {
         this.accountUserService = accountUserService;
         this.jwtAuthFilter = jwtAuthFilter;
+        this.customAuthenticationEntryPoint = customAuthenticationEntryPoint;
     }
 
     @Override
@@ -41,6 +43,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .authorizeRequests()
                 .antMatchers(PERMITTED_ENDPOINTS).permitAll()
                 .anyRequest().authenticated()
+                .and()
+                .exceptionHandling()
+                .authenticationEntryPoint(customAuthenticationEntryPoint)
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
