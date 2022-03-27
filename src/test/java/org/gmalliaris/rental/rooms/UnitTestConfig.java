@@ -1,11 +1,18 @@
 package org.gmalliaris.rental.rooms;
 
+import org.gmalliaris.rental.rooms.config.WebSecurityConfigService;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
-@ActiveProfiles("test-security")
+@Profile("test-security")
 @ComponentScan("org.gmalliaris.rental.rooms.config")
 public class UnitTestConfig {
+
+    @Bean
+    public WebSecurityConfigService webSecurityServiceConfig(){
+        return new WebSecurityConfigServiceTestImpl();
+    }
 }

@@ -1,4 +1,4 @@
-package org.gmalliaris.rental.rooms;
+package org.gmalliaris.rental.rooms.integration;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
