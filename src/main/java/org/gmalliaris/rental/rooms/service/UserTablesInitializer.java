@@ -81,11 +81,11 @@ public class UserTablesInitializer implements ApplicationListener<ApplicationRea
                 });
 
         var adminUser = new AccountUser();
-        adminUser.setEmail("admin@example.eg");
-        adminUser.setFirstName("Admin");
-        adminUser.setLastName("istrator");
+        adminUser.setEmail(adminEmail);
         var encodedPassword = bCryptPasswordEncoder
                 .encode(adminPassword);
+        adminUser.setFirstName("Admin");
+        adminUser.setLastName("istrator");
         adminUser.setPassword(encodedPassword);
         adminUser.addRole(adminRole);
         adminUser.setEnabled(true);
