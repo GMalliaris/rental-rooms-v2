@@ -15,9 +15,11 @@ import java.util.Objects;
 public class JwtService {
 
     @Value("${jwt.access.expiration.seconds: 120}")
+    @SuppressWarnings("java:S116") // Exclude Constants from regex naming rule
     private int ACCESS_DURATION_SECONDS;
 
     @Value("${jwt.refresh.expiration.minutes: 60}")
+    @SuppressWarnings("java:S116") // Exclude Constants from regex naming rule
     private int REFRESH_DURATION_MINUTES;
 
     public String generateAccessToken(AccountUser user){

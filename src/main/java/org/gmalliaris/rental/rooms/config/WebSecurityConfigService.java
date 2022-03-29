@@ -6,6 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 public interface WebSecurityConfigService {
 
+    @SuppressWarnings("java:S112")
     void configure(AuthenticationManagerBuilder auth, BCryptPasswordEncoder bCryptPasswordEncoder) throws Exception;
 
     void configure(HttpSecurity http);
