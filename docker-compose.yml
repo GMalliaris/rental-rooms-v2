@@ -18,6 +18,14 @@ services:
       POSTGRES_USER: rental-rooms
       POSTGRES_PASSWORD: rental-rooms
 
+  mailhog:
+    image: mailhog/mailhog:latest
+    restart: always
+    ports:
+      - "1025:1025"
+      - "587:1025"
+      - "8025:8025"
+
   app:
     build: .
     ports:
@@ -26,3 +34,4 @@ services:
       backend:
     depends_on:
       - postgres-db
+      - mailhog
