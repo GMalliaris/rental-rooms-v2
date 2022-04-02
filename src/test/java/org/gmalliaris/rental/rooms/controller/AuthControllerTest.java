@@ -190,4 +190,15 @@ class AuthControllerTest {
         verify(securityService).getCurrentUserId();
         verify(accountUserService).refreshAuthTokens(randomId, authHeaderValue);
     }
+
+    @Test
+    void confirmAccountUserRegistrationTest() throws Exception {
+
+        var randomUUID = UUID.randomUUID();
+        var uri = String.format("/auth/confirm/%s", randomUUID);
+        mockMvc.perform(post(uri))
+                .andExpect(status().isCreated());
+
+        verify(accountUserService).confirmAccountUserRegistration(randomUUID);
+    }
 }

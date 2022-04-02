@@ -88,6 +88,19 @@ public class AccountUserService {
         }
     }
 
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void confirmAccountUserRegistration(UUID confirmationToken){
+
+        var activatedToken = confirmationTokenService.useConfirmationToken(confirmationToken);
+
+        var user = activatedToken.getAccountUser();
+        if (user.isEnabled()){
+            throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.USER_ALREADY_CONFIRMED);
+        }
+        user.setEnabled(true);
+        accountUserRepository.save(user);
+    }
+
     @Transactional(readOnly = true)
     public AccountUserAuthResponse login(LoginRequest loginRequest){
         var user = findByEmail(loginRequest.getUsername());

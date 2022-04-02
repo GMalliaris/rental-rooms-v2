@@ -17,7 +17,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
-    private static final String[] PERMITTED_ENDPOINTS = new String[]{"/auth/register", "/auth/login"};
+    private static final String[] PERMITTED_ENDPOINTS = new String[]{"/auth/register",
+            "/auth/login", "/auth/confirm/**"};
     private final WebSecurityConfigService serviceConfig;
     private final CustomAuthenticationEntryPointConfig customAuthenticationEntryPointConfig;
 

@@ -305,4 +305,42 @@ class AccountUserServiceTest {
         verify(jwtService).generateAccessToken(user);
         verify(jwtService).generateNewRefreshToken(user, header);
     }
+
+    @Test
+    void confirmAccountUserRegistrationTest_throwsBecauseAlreadyActivated(){
+        var user = new AccountUser();
+        user.setEnabled(true);
+
+        var token = new ConfirmationToken();
+        token.setAccountUser(user);
+
+        when(tokenService.useConfirmationToken(any(UUID.class)))
+                .thenReturn(token);
+
+        var uuid = UUID.randomUUID();
+        var exception = assertThrows(ApiException.class,
+                () -> accountUserService.confirmAccountUserRegistration(uuid));
+
+        verify(tokenService).useConfirmationToken(uuid);
+        assertEquals(ApiExceptionMessageConstants.USER_ALREADY_CONFIRMED,
+                exception.getMessage());
+    }
+
+    @Test
+    void confirmAccountUserRegistrationTest(){
+        var user = new AccountUser();
+        user.setEnabled(false);
+
+        var token = new ConfirmationToken();
+        token.setAccountUser(user);
+
+        when(tokenService.useConfirmationToken(any(UUID.class)))
+                .thenReturn(token);
+
+        var uuid = UUID.randomUUID();
+        accountUserService.confirmAccountUserRegistration(uuid);
+
+        verify(tokenService).useConfirmationToken(uuid);
+        verify(accountUserRepository).save(user);
+    }
 }

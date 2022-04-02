@@ -9,6 +9,9 @@ public final class ApiExceptionMessageConstants {
     public static final String INVALID_CREDENTIALS = "Invalid username and/or password.";
     public static final String ENTITY_NOT_FOUND_TEMPLATE = "%s entity '%s' not found.";
     public static final String FAILED_EMAIL = "Failed to send email for %s.";
+    public static final String CONFIRMATION_TOKEN_EXPIRED = "Confirmation token has expired.";
+    public static final String CONFIRMATION_TOKEN_ALREADY_USER = "Confirmation token has already used to confirm registration.";
+    public static final String USER_ALREADY_CONFIRMED = "User registration has already been confirmed.";
 
     private ApiExceptionMessageConstants(){
         // hide implicit constructor

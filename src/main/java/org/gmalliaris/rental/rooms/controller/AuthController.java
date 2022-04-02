@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth")
@@ -41,6 +42,13 @@ public class AuthController {
     public AccountUserAuthResponse refreshAuthTokens(@RequestHeader("Authorization") String authorizationHeader){
         var currentUserId = securityService.getCurrentUserId();
         return accountUserService.refreshAuthTokens(currentUserId, authorizationHeader);
+    }
+
+    @PostMapping("/confirm/{confirmationToken}")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
+    public void confirmAccountUserRegistration(@PathVariable("confirmationToken") UUID confirmationToken){
+        accountUserService.confirmAccountUserRegistration(confirmationToken);
     }
 
 }
