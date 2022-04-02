@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Spring boot eamil teplate with Thymeleaf</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <link href='http://fonts.googleapis.com/css?family=Roboto' rel='stylesheet' type='text/css'/>
+    <!-- use the font -->
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+    </style>
+</head>
+<body>
+<p>
+    <h1>Dear Mr./Ms.
+        <span th:text="${firstName}">Giorgos</span>
+        <span th:text="${lastName}">Malliaris</span>,
+    </h1>
+    <br/>
+    you successfully registered to Rental Rooms v2.
+    In order to confirm your registration you have to verify your account.
+    <br/>
+    <h2>
+        Verification token:
+        <span id="token" th:text="${confirmationToken}">3b7e14f9-315c-4676-ab82-767da236e0c2</span>
+        <button id="copyToken" onclick="copyToClipboard()" type="button">Copy</button>
+    </h2>
+    The confirmation token expires at
+    <span th:text="${#dates.format(confirmationTokenExpirationDate, 'dd MMM yyyy')}">10 April 1997</span>
+    .
+</p>
+
+<script>
+    function copyToClipboard() {
+        /* Get the text field */
+        const tokenElement = document.getElementById("token");
+
+        /* Copy the text inside the text field */
+        navigator.clipboard.writeText(tokenElement.textContent);
+
+        /* Alert the copied text */
+        alert("Copied the text: " + tokenElement.textContent);
+    }
+</script>
+</body>
+</html>
