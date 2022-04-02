@@ -39,7 +39,7 @@ public class ConfirmationTokenService {
             throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.CONFIRMATION_TOKEN_EXPIRED);
         }
         if (ConfirmationTokenStatus.ACTIVATED == token.getStatus()){
-            throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USER);
+            throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USED);
         }
         return token;
     }

@@ -241,6 +241,6 @@ class AuthControllerIT {
         mockMvc.perform(post(confirmUri))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message")
-                        .value(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USER));
+                        .value(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USED));
     }
 }

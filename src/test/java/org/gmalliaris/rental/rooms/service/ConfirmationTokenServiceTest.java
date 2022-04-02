@@ -99,7 +99,7 @@ class ConfirmationTokenServiceTest {
         var exception = assertThrows(ApiException.class,
                 () -> tokenService.useConfirmationToken(uuid));
 
-        assertEquals(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USER, exception.getMessage());
+        assertEquals(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USED, exception.getMessage());
         verify(tokenRepository).findById(uuid);
     }
 
