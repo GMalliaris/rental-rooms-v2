@@ -6,6 +6,7 @@ import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
+import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.mail.MessagingException;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -21,14 +23,20 @@ public class AccountUserService {
 
     private final AccountUserRepository accountUserRepository;
     private final UserRoleService userRoleService;
+    private final ConfirmationTokenService confirmationTokenService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JwtService jwtService;
+    private final MailService mailService;
 
-    public AccountUserService(AccountUserRepository accountUserRepository, UserRoleService userRoleService, BCryptPasswordEncoder bCryptPasswordEncoder, JwtService jwtService) {
+    public AccountUserService(AccountUserRepository accountUserRepository, UserRoleService userRoleService,
+                              ConfirmationTokenService confirmationTokenService, BCryptPasswordEncoder bCryptPasswordEncoder,
+                              JwtService jwtService, MailService mailService) {
         this.accountUserRepository = accountUserRepository;
         this.userRoleService = userRoleService;
+        this.confirmationTokenService = confirmationTokenService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.jwtService = jwtService;
+        this.mailService = mailService;
     }
 
     private AccountUser findByEmail(String email){
@@ -40,6 +48,10 @@ public class AccountUserService {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void createAccountUser(CreateUserRequest request){
+
+        if (request.getRoles().contains(UserRoleName.ROLE_ADMIN)){
+            throw new ApiException(HttpStatus.BAD_REQUEST, ApiExceptionMessageConstants.INVALID_USER_ROLES_REGISTRATION);
+        }
 
         if (accountUserRepository.countByEmail(request.getEmail()) > 0){
             throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.USED_EMAIL);
@@ -65,8 +77,15 @@ public class AccountUserService {
                 var userRole = userRoleService.findUserRoleByName(roleName);
                 user.addRole(userRole);
             });
-
         accountUserRepository.save(user);
+
+        var confirmationToken = confirmationTokenService.createTokenForUser(user);
+        try {
+            mailService.sendRegistrationConfirmationEmail(confirmationToken);
+        } catch (MessagingException e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    String.format(ApiExceptionMessageConstants.FAILED_EMAIL, "Registration Confirmation"));
+        }
     }
 
     @Transactional(readOnly = true)

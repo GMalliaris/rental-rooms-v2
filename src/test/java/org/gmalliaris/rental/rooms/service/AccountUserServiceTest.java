@@ -5,6 +5,7 @@ import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
+import org.gmalliaris.rental.rooms.entity.ConfirmationToken;
 import org.gmalliaris.rental.rooms.entity.UserRole;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
@@ -16,6 +17,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
+import javax.mail.MessagingException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -41,6 +44,24 @@ class AccountUserServiceTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private ConfirmationTokenService tokenService;
+
+    @Mock
+    private MailService mailService;
+
+    @Test
+    void createAccountUserTest_throwsBecausAdminUser(){
+        var roles = List.of(UserRoleName.ROLE_ADMIN);
+        var request = new CreateUserRequest("12345678", "admin@example.eg",
+                "firstName", null, "123456789", roles);
+
+        var exception = assertThrows(ApiException.class,
+                () -> accountUserService.createAccountUser(request));
+        assertEquals(ApiExceptionMessageConstants.INVALID_USER_ROLES_REGISTRATION,
+                exception.getMessage());
+    }
 
     @Test
     void createAccountUserTest_throwsBecauseUsedEmail(){
@@ -87,7 +108,7 @@ class AccountUserServiceTest {
     }
 
     @Test
-    void createAccountUserTest(){
+    void createAccountUserTest() throws MessagingException {
         when(accountUserRepository.countByEmail(anyString()))
                 .thenReturn(0L);
 
@@ -103,17 +124,19 @@ class AccountUserServiceTest {
                 });
 
         var roles = List.of(UserRoleName.ROLE_HOST,
-                UserRoleName.ROLE_GUEST, UserRoleName.ROLE_GUEST);
+                UserRoleName.ROLE_GUEST, UserRoleName.ROLE_HOST);
         var request = new CreateUserRequest("12345678", "admin@example.eg",
                 "firstName", null, "123456789", roles);
+
+        var mockToken = mock(ConfirmationToken.class);
+        when(tokenService.createTokenForUser(any(AccountUser.class)))
+                .thenReturn(mockToken);
 
         accountUserService.createAccountUser(request);
 
         verify(bCryptPasswordEncoder).encode(request.getPassword());
-        verify(userRoleService)
-                .findUserRoleByName(UserRoleName.ROLE_HOST);
-        verify(userRoleService)
-                .findUserRoleByName(UserRoleName.ROLE_GUEST);
+        roles.forEach(role -> verify(userRoleService)
+                .findUserRoleByName(role));
         var argCaptor = ArgumentCaptor.forClass(AccountUser.class);
         verify(accountUserRepository).save(argCaptor.capture());
 
@@ -125,7 +148,44 @@ class AccountUserServiceTest {
         assertEquals(request.getLastName(), user.getLastName());
         assertEquals(request.getPhoneNumber(), user.getPhoneNumber());
         assertFalse(user.isEnabled());
-        assertEquals(2, user.getRoles().size());
+        assertEquals(new HashSet<>(request.getRoles()).size(), user.getRoles().size());
+
+        verify(tokenService).createTokenForUser(user);
+        verify(mailService).sendRegistrationConfirmationEmail(mockToken);
+    }
+
+    @Test
+    void createAccountUserTest_throwsMessageException() throws MessagingException {
+        when(accountUserRepository.countByEmail(anyString()))
+                .thenReturn(0L);
+
+        var encoded = "encoded";
+        when(bCryptPasswordEncoder.encode(anyString()))
+                .thenReturn(encoded);
+
+        when(userRoleService.findUserRoleByName(any(UserRoleName.class)))
+                .then(i -> {
+                    var role = new UserRole();
+                    role.setName(i.getArgument(0));
+                    return role;
+                });
+
+        var roles = List.of(UserRoleName.ROLE_HOST,
+                UserRoleName.ROLE_GUEST, UserRoleName.ROLE_HOST);
+        var request = new CreateUserRequest("12345678", "admin@example.eg",
+                "firstName", null, "123456789", roles);
+
+        var mockToken = mock(ConfirmationToken.class);
+        when(tokenService.createTokenForUser(any(AccountUser.class)))
+                .thenReturn(mockToken);
+        doThrow(MessagingException.class).when(mailService)
+                .sendRegistrationConfirmationEmail(any(ConfirmationToken.class));
+
+        var exception = assertThrows(ApiException.class,
+                () -> accountUserService.createAccountUser(request));
+        assertEquals(String.format(ApiExceptionMessageConstants.FAILED_EMAIL,
+                        "Registration Confirmation"),
+                exception.getMessage());
     }
 
     @Test
