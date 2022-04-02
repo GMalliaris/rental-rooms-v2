@@ -75,6 +75,7 @@ public class ConfirmationTokenService {
 
         var token = extractPendingFromOptional(optionalToken, errMsg);
         repository.delete(token);
+        repository.flush();
         return createTokenForUser(user);
     }
 
