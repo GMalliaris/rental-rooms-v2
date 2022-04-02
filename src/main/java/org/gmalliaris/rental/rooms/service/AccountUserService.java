@@ -6,6 +6,7 @@ import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
+import org.gmalliaris.rental.rooms.entity.ConfirmationToken;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
 import org.springframework.http.HttpStatus;
@@ -23,17 +24,17 @@ public class AccountUserService {
 
     private final AccountUserRepository accountUserRepository;
     private final UserRoleService userRoleService;
-    private final ConfirmationTokenService confirmationTokenService;
+    private final ConfirmationTokenService tokenService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JwtService jwtService;
     private final MailService mailService;
 
     public AccountUserService(AccountUserRepository accountUserRepository, UserRoleService userRoleService,
-                              ConfirmationTokenService confirmationTokenService, BCryptPasswordEncoder bCryptPasswordEncoder,
+                              ConfirmationTokenService tokenService, BCryptPasswordEncoder bCryptPasswordEncoder,
                               JwtService jwtService, MailService mailService) {
         this.accountUserRepository = accountUserRepository;
         this.userRoleService = userRoleService;
-        this.confirmationTokenService = confirmationTokenService;
+        this.tokenService = tokenService;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.jwtService = jwtService;
         this.mailService = mailService;
@@ -79,19 +80,14 @@ public class AccountUserService {
             });
         accountUserRepository.save(user);
 
-        var confirmationToken = confirmationTokenService.createTokenForUser(user);
-        try {
-            mailService.sendRegistrationConfirmationEmail(confirmationToken);
-        } catch (MessagingException e) {
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    String.format(ApiExceptionMessageConstants.FAILED_EMAIL, "Registration Confirmation"));
-        }
+        var confirmationToken = tokenService.createTokenForUser(user);
+        sendRegistrationConfirmationEmail(confirmationToken);
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void confirmAccountUserRegistration(UUID confirmationToken){
 
-        var activatedToken = confirmationTokenService.useConfirmationToken(confirmationToken);
+        var activatedToken = tokenService.useConfirmationToken(confirmationToken);
 
         var user = activatedToken.getAccountUser();
         if (user.isEnabled()){
@@ -134,5 +130,26 @@ public class AccountUserService {
         var accessToken = jwtService.generateAccessToken(user);
         var refreshToken = jwtService.generateNewRefreshToken(user, authHeader);
         return new AccountUserAuthResponse(accessToken, refreshToken);
+    }
+
+    @Transactional
+    public void resetConfirmationProcess(UUID currentUserId){
+
+        var currentUser = findAccountUserById(currentUserId);
+        if (currentUser.isEnabled()){
+            throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.USER_ALREADY_CONFIRMED);
+        }
+        var newToken = tokenService.replaceConfirmationTokenForUser(currentUser);
+
+        sendRegistrationConfirmationEmail(newToken);
+    }
+
+    private void sendRegistrationConfirmationEmail(ConfirmationToken token){
+        try {
+            mailService.sendRegistrationConfirmationEmail(token);
+        } catch (MessagingException e) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    String.format(ApiExceptionMessageConstants.FAILED_EMAIL, "Registration Confirmation"));
+        }
     }
 }

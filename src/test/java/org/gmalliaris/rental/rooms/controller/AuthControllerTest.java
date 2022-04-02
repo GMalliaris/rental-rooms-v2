@@ -201,4 +201,26 @@ class AuthControllerTest {
 
         verify(accountUserService).confirmAccountUserRegistration(randomUUID);
     }
+
+    @Test
+    void resetConfirmationProcessTest_isForbidden() throws Exception {
+
+        mockMvc.perform(post("/auth/confirm-reset"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser
+    void resetConfirmationProcessTest() throws Exception {
+
+        var userId = UUID.randomUUID();
+        when(securityService.getCurrentUserId())
+                .thenReturn(userId);
+
+        mockMvc.perform(post("/auth/confirm-reset"))
+                .andExpect(status().isCreated());
+
+        verify(securityService).getCurrentUserId();
+        verify(accountUserService).resetConfirmationProcess(userId);
+    }
 }

@@ -8,6 +8,7 @@ import org.gmalliaris.rental.rooms.entity.ConfirmationTokenStatus;
 import org.gmalliaris.rental.rooms.repository.ConfirmationTokenRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -119,5 +120,46 @@ class ConfirmationTokenServiceTest {
 
         verify(tokenRepository).findById(uuid);
         verify(tokenRepository).save(token);
+    }
+
+    @Test
+    void replaceConfirmationTokenForUserTest_throwsBecauseEntityNotFound(){
+        when(tokenRepository.findByAccountUserId(any(UUID.class)))
+                .thenReturn(Optional.empty());
+
+        var user = new AccountUser();
+        user.setId(UUID.randomUUID());
+
+        var exception = assertThrows(ApiException.class,
+                () -> tokenService.replaceConfirmationTokenForUser(user));
+
+        var expectedErrMsg = String.format("ConfirmationToken entity of AccountUser entity '%s' not found.",
+                user.getId());
+        assertEquals(expectedErrMsg, exception.getMessage());
+
+        verify(tokenRepository).findByAccountUserId(user.getId());
+    }
+
+    @Test
+    void replaceConfirmationTokenForUserTest(){
+        var user = new AccountUser();
+        user.setId(UUID.randomUUID());
+
+        var oldToken = new ConfirmationToken();
+        oldToken.setStatus(ConfirmationTokenStatus.PENDING);
+        oldToken.setAccountUser(user);
+
+        when(tokenRepository.findByAccountUserId(any(UUID.class)))
+                .thenReturn(Optional.of(oldToken));
+        when(tokenRepository.save(any(ConfirmationToken.class)))
+                .then(i -> i.getArgument(0));
+
+        var result = tokenService.replaceConfirmationTokenForUser(user);
+
+        verify(tokenRepository).findByAccountUserId(user.getId());
+        verify(tokenRepository).delete(oldToken);
+        var newTokenCaptor = ArgumentCaptor.forClass(ConfirmationToken.class);
+        verify(tokenRepository).save(newTokenCaptor.capture());
+        assertNotEquals(newTokenCaptor.getValue(), oldToken);
     }
 }

@@ -11,8 +11,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 
 import java.time.LocalDate;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
 class ConfirmationTokenRepositoryTest {
@@ -75,5 +74,39 @@ class ConfirmationTokenRepositoryTest {
 
         tokenRepository.saveAndFlush(token);
         assertNotNull(token.getId());
+    }
+
+    @Test
+    void findByAccountUserIdTest(){
+        var token = new ConfirmationToken();
+        token.setStatus(ConfirmationTokenStatus.PENDING);
+        token.setExpirationDate(LocalDate.now());
+        token.setAccountUser(user);
+        tokenRepository.saveAndFlush(token);
+        assertNotNull(token.getId());
+
+        var user2 = new AccountUser();
+        user2.setEmail("test2@example.eg");
+        user2.setPassword("12345678");
+        user2.setFirstName("firstName");
+        userRepository.saveAndFlush(user2);
+        assertNotNull(user2.getId());
+
+        var token2 = new ConfirmationToken();
+        token2.setStatus(ConfirmationTokenStatus.PENDING);
+        token2.setExpirationDate(LocalDate.now());
+        token2.setAccountUser(user2);
+        tokenRepository.saveAndFlush(token2);
+        assertNotNull(token2.getId());
+
+        var result = tokenRepository.findByAccountUserId(user.getId());
+        assertNotNull(result);
+        assertTrue(result.isPresent());
+        assertEquals(token, result.get());
+
+        var result2 = tokenRepository.findByAccountUserId(user2.getId());
+        assertNotNull(result2);
+        assertTrue(result2.isPresent());
+        assertEquals(token2, result2.get());
     }
 }

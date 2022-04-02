@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -26,14 +27,12 @@ public class ConfirmationTokenService {
         this.repository = repository;
     }
 
-    @Transactional
-    public ConfirmationToken useConfirmationToken(UUID tokenId){
+    private ConfirmationToken extractPendingFromOptional(Optional<ConfirmationToken> optionalToken,
+                                                         String notFoundMessage){
 
-        var token = repository.findById(tokenId)
+        var token = optionalToken
                 .orElseThrow(() -> {
-                    var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
-                            "ConfirmationToken", tokenId);
-                    throw new ApiException(HttpStatus.NOT_FOUND, errMsg);
+                    throw new ApiException(HttpStatus.NOT_FOUND, notFoundMessage);
                 });
 
         if (ConfirmationTokenStatus.EXPIRED == token.getStatus()){
@@ -42,7 +41,17 @@ public class ConfirmationTokenService {
         if (ConfirmationTokenStatus.ACTIVATED == token.getStatus()){
             throw new ApiException(HttpStatus.CONFLICT, ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USER);
         }
+        return token;
+    }
 
+    @Transactional
+    public ConfirmationToken useConfirmationToken(UUID tokenId){
+
+        var optionalToken = repository.findById(tokenId);
+
+        var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
+                "ConfirmationToken", tokenId);
+        var token = extractPendingFromOptional(optionalToken, errMsg);
         token.setStatus(ConfirmationTokenStatus.ACTIVATED);
         return repository.save(token);
     }
@@ -55,6 +64,18 @@ public class ConfirmationTokenService {
         confirmationToken.setExpirationDate(LocalDate.now().plusDays(durationInDays));
         confirmationToken.setAccountUser(user);
         return repository.save(confirmationToken);
+    }
+
+    @Transactional
+    public ConfirmationToken replaceConfirmationTokenForUser(AccountUser user){
+
+        var optionalToken = repository.findByAccountUserId(user.getId());
+        var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_OF_ENTITY_NOT_FOUND_TEMPLATE,
+                "ConfirmationToken", "AccountUser", user.getId());
+
+        var token = extractPendingFromOptional(optionalToken, errMsg);
+        repository.delete(token);
+        return createTokenForUser(user);
     }
 
 }

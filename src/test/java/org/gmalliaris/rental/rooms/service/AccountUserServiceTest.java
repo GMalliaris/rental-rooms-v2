@@ -343,4 +343,43 @@ class AccountUserServiceTest {
         verify(tokenService).useConfirmationToken(uuid);
         verify(accountUserRepository).save(user);
     }
+
+    @Test
+    void resetConfirmationProcessTest_throwsBecauseIsEnabled() {
+
+        var user = mock(AccountUser.class);
+        when(user.isEnabled()).thenReturn(true);
+
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(user));
+
+        var uuid = UUID.randomUUID();
+        var exception = assertThrows(ApiException.class,
+                () -> accountUserService.resetConfirmationProcess(uuid));
+        assertEquals(ApiExceptionMessageConstants.USER_ALREADY_CONFIRMED,
+                exception.getMessage());
+
+        verify(accountUserRepository).findById(uuid);
+        verifyNoInteractions(tokenService);
+        verifyNoInteractions(mailService);
+    }
+
+    @Test
+    void resetConfirmationProcessTest() throws MessagingException {
+
+        var user = mock(AccountUser.class);
+        var token = mock(ConfirmationToken.class);
+
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(user));
+        when(tokenService.replaceConfirmationTokenForUser(any(AccountUser.class)))
+                .thenReturn(token);
+
+        var uuid = UUID.randomUUID();
+        accountUserService.resetConfirmationProcess(uuid);
+
+        verify(accountUserRepository).findById(uuid);
+        verify(tokenService).replaceConfirmationTokenForUser(user);
+        verify(mailService).sendRegistrationConfirmationEmail(token);
+    }
 }

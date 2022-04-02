@@ -44,6 +44,14 @@ public class AuthController {
         return accountUserService.refreshAuthTokens(currentUserId, authorizationHeader);
     }
 
+    @PostMapping("/confirm-reset")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Transactional
+    public void resetConfirmationProcess(){
+        var currentUserId = securityService.getCurrentUserId();
+        accountUserService.resetConfirmationProcess(currentUserId);
+    }
+
     @PostMapping("/confirm/{confirmationToken}")
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
