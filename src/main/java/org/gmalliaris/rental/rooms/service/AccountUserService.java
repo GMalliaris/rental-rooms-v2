@@ -40,13 +40,6 @@ public class AccountUserService {
         this.mailService = mailService;
     }
 
-    private AccountUser findByEmail(String email){
-        return accountUserRepository.findByEmail(email)
-                .orElseThrow(() -> {
-                    throw new ApiException(HttpStatus.BAD_REQUEST, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
-                });
-    }
-
     @Transactional(propagation = Propagation.MANDATORY)
     public void createAccountUser(CreateUserRequest request){
 
@@ -99,10 +92,13 @@ public class AccountUserService {
 
     @Transactional(readOnly = true)
     public AccountUserAuthResponse login(LoginRequest loginRequest){
-        var user = findByEmail(loginRequest.getUsername());
+        var user = accountUserRepository.findByEmail(loginRequest.getUsername())
+                .orElseThrow(() -> {
+                    throw new ApiException(HttpStatus.UNAUTHORIZED, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
+                });
         var encryptedPwd = user.getPassword();
         if (!bCryptPasswordEncoder.matches(loginRequest.getPassword(), encryptedPwd)){
-            throw new ApiException(HttpStatus.BAD_REQUEST, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
+            throw new ApiException(HttpStatus.UNAUTHORIZED, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
         }
 
         var accessToken = jwtService.generateAccessToken(user);

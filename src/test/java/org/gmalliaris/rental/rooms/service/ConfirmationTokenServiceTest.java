@@ -12,6 +12,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
@@ -56,7 +57,7 @@ class ConfirmationTokenServiceTest {
     }
 
     @Test
-    void useConfirmationTokenTest_throwsBecausNotFound(){
+    void useConfirmationTokenTest_throwsBecauseNotFound(){
         var uuid = UUID.randomUUID();
 
         when(tokenRepository.findById(any(UUID.class)))
@@ -68,6 +69,8 @@ class ConfirmationTokenServiceTest {
         var expectedErrMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
                 "ConfirmationToken", uuid);
         assertEquals(expectedErrMsg, exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
         verify(tokenRepository).findById(uuid);
     }
 
@@ -82,8 +85,9 @@ class ConfirmationTokenServiceTest {
 
         var exception = assertThrows(ApiException.class,
                 () -> tokenService.useConfirmationToken(uuid));
-
         assertEquals(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_EXPIRED, exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+
         verify(tokenRepository).findById(uuid);
     }
 
@@ -98,8 +102,9 @@ class ConfirmationTokenServiceTest {
 
         var exception = assertThrows(ApiException.class,
                 () -> tokenService.useConfirmationToken(uuid));
-
         assertEquals(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USED, exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+
         verify(tokenRepository).findById(uuid);
     }
 
@@ -136,6 +141,7 @@ class ConfirmationTokenServiceTest {
         var expectedErrMsg = String.format("ConfirmationToken entity of AccountUser entity '%s' not found.",
                 user.getId());
         assertEquals(expectedErrMsg, exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
 
         verify(tokenRepository).findByAccountUserId(user.getId());
     }

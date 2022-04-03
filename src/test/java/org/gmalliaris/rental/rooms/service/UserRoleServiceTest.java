@@ -8,12 +8,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,8 +34,10 @@ class UserRoleServiceTest {
 
         var exception = assertThrows(ApiException.class,
                 () -> userRoleService.findUserRoleByName(UserRoleName.ROLE_GUEST));
-
         var errMsg = "UserRole entity 'ROLE_GUEST' not found.";
         assertEquals(errMsg, exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
+
+        verify(userRoleRepository).findByName(UserRoleName.ROLE_GUEST);
     }
 }

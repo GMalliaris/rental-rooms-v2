@@ -26,6 +26,13 @@ public class ExceptionControllerAdvice {
         return new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
     }
 
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ExceptionHandler(IllegalStateException.class)
+    public ExceptionResponse illegalStateException(IllegalStateException illegalStateException) {
+        logException(illegalStateException);
+        return new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR, illegalStateException.getMessage());
+    }
+
     @ResponseStatus(HttpStatus.FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
     public ExceptionResponse accessDeniedException(AccessDeniedException exception) {

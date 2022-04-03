@@ -15,6 +15,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.mail.MessagingException;
@@ -52,7 +53,7 @@ class AccountUserServiceTest {
     private MailService mailService;
 
     @Test
-    void createAccountUserTest_throwsBecausAdminUser(){
+    void createAccountUserTest_throwsBecauseAdminUser(){
         var roles = List.of(UserRoleName.ROLE_ADMIN);
         var request = new CreateUserRequest("12345678", "admin@example.eg",
                 "firstName", null, "123456789", roles);
@@ -61,6 +62,7 @@ class AccountUserServiceTest {
                 () -> accountUserService.createAccountUser(request));
         assertEquals(ApiExceptionMessageConstants.INVALID_USER_ROLES_REGISTRATION,
                 exception.getMessage());
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
     }
 
     @Test
@@ -77,6 +79,7 @@ class AccountUserServiceTest {
                 () -> accountUserService.createAccountUser(mockRequest));
         assertEquals(ApiExceptionMessageConstants.USED_EMAIL,
                 exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
 
         verify(accountUserRepository).countByEmail(email);
         verify(accountUserRepository, never()).save(any(AccountUser.class));
@@ -101,6 +104,7 @@ class AccountUserServiceTest {
                 () -> accountUserService.createAccountUser(mockRequest));
         assertEquals(ApiExceptionMessageConstants.USED_PHONE_NUMBER,
                 exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
 
         verify(accountUserRepository).countByEmail(email);
         verify(accountUserRepository).countByPhoneNumber(phoneNumber);
@@ -186,6 +190,7 @@ class AccountUserServiceTest {
         assertEquals(String.format(ApiExceptionMessageConstants.FAILED_EMAIL,
                         "Registration Confirmation"),
                 exception.getMessage());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, exception.getStatus());
     }
 
     @Test
@@ -198,6 +203,8 @@ class AccountUserServiceTest {
         var exception = assertThrows(ApiException.class,
                 () -> accountUserService.login(loginRequest));
         assertEquals(ApiExceptionMessageConstants.INVALID_CREDENTIALS, exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+
         verify(accountUserRepository).findByEmail(loginRequest.getUsername());
     }
 
@@ -218,6 +225,8 @@ class AccountUserServiceTest {
         var exception = assertThrows(ApiException.class,
                 () -> accountUserService.login(loginRequest));
         assertEquals(ApiExceptionMessageConstants.INVALID_CREDENTIALS, exception.getMessage());
+        assertEquals(HttpStatus.UNAUTHORIZED, exception.getStatus());
+
         verify(accountUserRepository).findByEmail(loginRequest.getUsername());
         verify(bCryptPasswordEncoder).matches(loginRequest.getPassword(), mockUser.getPassword());
     }
@@ -260,10 +269,10 @@ class AccountUserServiceTest {
 
         var exception = assertThrows(ApiException.class,
                 () -> accountUserService.findAccountUserById(randomId));
-
         var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
                 AccountUser.class, randomId);
         assertEquals(errMsg, exception.getMessage());
+        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
 
     @Test
@@ -320,10 +329,11 @@ class AccountUserServiceTest {
         var uuid = UUID.randomUUID();
         var exception = assertThrows(ApiException.class,
                 () -> accountUserService.confirmAccountUserRegistration(uuid));
-
-        verify(tokenService).useConfirmationToken(uuid);
         assertEquals(ApiExceptionMessageConstants.USER_ALREADY_CONFIRMED,
                 exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
+
+        verify(tokenService).useConfirmationToken(uuid);
     }
 
     @Test
@@ -358,6 +368,7 @@ class AccountUserServiceTest {
                 () -> accountUserService.resetConfirmationProcess(uuid));
         assertEquals(ApiExceptionMessageConstants.USER_ALREADY_CONFIRMED,
                 exception.getMessage());
+        assertEquals(HttpStatus.CONFLICT, exception.getStatus());
 
         verify(accountUserRepository).findById(uuid);
         verifyNoInteractions(tokenService);

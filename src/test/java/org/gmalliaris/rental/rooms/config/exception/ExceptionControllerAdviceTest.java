@@ -74,6 +74,22 @@ class ExceptionControllerAdviceTest {
     }
 
     @Test
+    void illegalStateException() throws Exception {
+        var body = new LoginRequest(email, password);
+
+        var errMsg = "Random illegal state exception message";
+        when(accountUserService.login(any(LoginRequest.class)))
+                .thenThrow(new IllegalStateException(errMsg));
+
+        mockMvc.perform(post("/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.httpStatus").value(HttpStatus.INTERNAL_SERVER_ERROR.name()))
+                .andExpect(jsonPath("$.message").value(errMsg));
+    }
+
+    @Test
     void apiException() throws Exception {
         var body = new LoginRequest(email, password);
 
