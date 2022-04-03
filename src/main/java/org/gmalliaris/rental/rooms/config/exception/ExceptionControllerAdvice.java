@@ -26,11 +26,11 @@ public class ExceptionControllerAdvice {
         return new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
     }
 
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
     @ExceptionHandler(AccessDeniedException.class)
     public ExceptionResponse accessDeniedException(AccessDeniedException exception) {
         logException(exception);
-        return new ExceptionResponse(HttpStatus.UNAUTHORIZED, "Access is denied.");
+        return new ExceptionResponse(HttpStatus.FORBIDDEN, ApiExceptionMessageConstants.FORBIDDEN_MESSAGE);
     }
 
     @ExceptionHandler(ApiException.class)

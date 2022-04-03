@@ -1,6 +1,7 @@
 package org.gmalliaris.rental.rooms.controller;
 
 import org.gmalliaris.rental.rooms.UnitTestConfig;
+import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.entity.UserRole;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
@@ -41,9 +42,10 @@ class AccountUserControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void findCurrentUserTest_isForbidden() throws Exception {
+    void findCurrentUserTest_isUnauthorized() throws Exception {
         mockMvc.perform(get("/users/me"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value(ApiExceptionMessageConstants.UNAUTHORIZED_MESSAGE));
     }
 
     @Test

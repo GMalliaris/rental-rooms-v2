@@ -2,6 +2,7 @@ package org.gmalliaris.rental.rooms.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gmalliaris.rental.rooms.UnitTestConfig;
+import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
@@ -161,9 +162,10 @@ class AuthControllerTest {
     }
 
     @Test
-    void refreshAuthTokens_isForbidden() throws Exception {
+    void refreshAuthTokens_isUnauthorized() throws Exception {
         mockMvc.perform(get("/auth/refresh"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value(ApiExceptionMessageConstants.UNAUTHORIZED_MESSAGE));
     }
 
     @Test
@@ -203,10 +205,11 @@ class AuthControllerTest {
     }
 
     @Test
-    void resetConfirmationProcessTest_isForbidden() throws Exception {
+    void resetConfirmationProcessTest_isUnauthorized() throws Exception {
 
         mockMvc.perform(post("/auth/confirm-reset"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value(ApiExceptionMessageConstants.UNAUTHORIZED_MESSAGE));
     }
 
     @Test

@@ -54,7 +54,7 @@ class ExceptionControllerAdviceTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.httpStatus").value("INTERNAL_SERVER_ERROR"))
+                .andExpect(jsonPath("$.httpStatus").value(HttpStatus.INTERNAL_SERVER_ERROR.name()))
                 .andExpect(jsonPath("$.message").value("Null pointer"));
     }
 
@@ -68,9 +68,9 @@ class ExceptionControllerAdviceTest {
         mockMvc.perform(post("/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.httpStatus").value("UNAUTHORIZED"))
-                .andExpect(jsonPath("$.message").value("Access is denied."));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.httpStatus").value(HttpStatus.FORBIDDEN.name()))
+                .andExpect(jsonPath("$.message").value(ApiExceptionMessageConstants.FORBIDDEN_MESSAGE));
     }
 
     @Test
@@ -84,7 +84,7 @@ class ExceptionControllerAdviceTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.httpStatus").value("NOT_FOUND"))
+                .andExpect(jsonPath("$.httpStatus").value(HttpStatus.NOT_FOUND.name()))
                 .andExpect(jsonPath("$.message").value("Not found"));
     }
 }

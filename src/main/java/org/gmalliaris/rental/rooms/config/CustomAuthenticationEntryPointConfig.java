@@ -30,10 +30,10 @@ public class CustomAuthenticationEntryPointConfig implements AuthenticationEntry
             throws IOException {
 
         logger.debug(authException.getMessage(), authException);
-        var message = new ExceptionResponse(HttpStatus.FORBIDDEN, "Forbidden.");
+        var message = new ExceptionResponse(HttpStatus.UNAUTHORIZED, "User is unauthorized.");
         var writer = response.getWriter();
         response.setContentType(MediaType.APPLICATION_JSON.toString());
-        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         writer.write(objectMapper.writeValueAsString(message));
         writer.flush();
         writer.close();

@@ -2,6 +2,8 @@ package org.gmalliaris.rental.rooms.config.exception;
 
 public final class ApiExceptionMessageConstants {
 
+    public static final String FORBIDDEN_MESSAGE = "Access is denied.";
+    public static final String UNAUTHORIZED_MESSAGE = "User is unauthorized.";
     public static final String USER_TABLES_INIT_ERROR = "Failed to initialize user tables on startup.";
     public static final String INVALID_USER_ROLES_REGISTRATION = "Cannot register as admin user.";
     public static final String USED_EMAIL = "Provided email is already in use.";
