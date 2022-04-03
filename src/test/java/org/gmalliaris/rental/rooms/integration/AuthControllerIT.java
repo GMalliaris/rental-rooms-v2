@@ -2,6 +2,7 @@ package org.gmalliaris.rental.rooms.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import org.gmalliaris.rental.rooms.RequestUtils;
 import org.gmalliaris.rental.rooms.VerifyMailUtils;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
@@ -15,17 +16,16 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 
+import static org.gmalliaris.rental.rooms.RequestUtils.Auth.*;
+import static org.gmalliaris.rental.rooms.RequestUtils.Users.performMe;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,9 +52,7 @@ class AuthControllerIT {
         var loginRequest = new LoginRequest("admin@example.eg",
                 "12345678");
 
-        var result = mockMvc.perform(post("/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(loginRequest)))
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -63,8 +61,7 @@ class AuthControllerIT {
         assertNotNull(accessToken);
         assertNotNull(refreshToken);
 
-        mockMvc.perform(get("/users/me").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performMe(mockMvc, accessToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("admin@example.eg"))
                 .andExpect(jsonPath("$.firstName").value("Admin"))
@@ -73,8 +70,7 @@ class AuthControllerIT {
                 .andExpect(jsonPath("$.roles.length()").value(1))
                 .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_ADMIN.toString())));
 
-        mockMvc.perform(get("/auth/refresh").
-                    header("Authorization", String.format("Bearer %s", refreshToken)))
+        RequestUtils.Auth.performRefreshTokens(mockMvc, refreshToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
@@ -90,16 +86,12 @@ class AuthControllerIT {
         var rolesList = List.of(UserRoleName.ROLE_HOST, UserRoleName.ROLE_GUEST);
 
         var registerRequest = new CreateUserRequest(password, email, firstName, lastName, phoneNumber, rolesList);
-        mockMvc.perform(post("/auth/register")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content(objectMapper.writeValueAsString(registerRequest)))
+        performRegister(mockMvc, objectMapper.writeValueAsString(registerRequest))
                 .andExpect(status().isCreated());
 
         var loginRequest = new LoginRequest(email, password);
 
-        var result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
                 .andExpect(status().isOk())
                 .andReturn();
 
@@ -108,8 +100,7 @@ class AuthControllerIT {
         assertNotNull(accessToken);
         assertNotNull(refreshToken);
 
-        mockMvc.perform(get("/users/me").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performMe(mockMvc, accessToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.firstName").value(firstName))
@@ -125,9 +116,7 @@ class AuthControllerIT {
         var reqBody = new CreateUserRequest("12345678aA!", "malliaris@example.eg", "first",
                 "lastName", "+30 6912345679", List.of(UserRoleName.ROLE_HOST));
 
-        mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(reqBody)))
+        performRegister(mockMvc, objectMapper.writeValueAsString(reqBody))
                 .andExpect(status().isCreated());
 
         var restTemplate = new RestTemplate();
@@ -140,15 +129,12 @@ class AuthControllerIT {
         var confirmationToken = VerifyMailUtils.extractTokenFromConfirmationToken(mailBody);
 
         var loginRequest = new LoginRequest(reqBody.getEmail(), reqBody.getPassword());
-        var result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
                 .andExpect(status().isOk())
                 .andReturn();
         var accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
 
-        mockMvc.perform(get("/users/me").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performMe(mockMvc, accessToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(reqBody.getEmail()))
                 .andExpect(jsonPath("$.firstName").value(reqBody.getFirstName()))
@@ -157,12 +143,10 @@ class AuthControllerIT {
                 .andExpect(jsonPath("$.roles.length()").value(1))
                 .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_HOST.toString())));
 
-        var confirmUri = String.format("/auth/confirm/%s", confirmationToken);
-        mockMvc.perform(post(confirmUri))
+        performConfirm(mockMvc, confirmationToken.toString())
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/users/me").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performMe(mockMvc, accessToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(reqBody.getEmail()))
                 .andExpect(jsonPath("$.firstName").value(reqBody.getFirstName()))
@@ -177,9 +161,7 @@ class AuthControllerIT {
         var reqBody = new CreateUserRequest("12345678aA!", "malliaris@example.eg", "first",
                 "lastName", "+30 6912345679", List.of(UserRoleName.ROLE_HOST));
 
-        mockMvc.perform(post("/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(reqBody)))
+        performRegister(mockMvc, objectMapper.writeValueAsString(reqBody))
                 .andExpect(status().isCreated());
 
         var restTemplate = new RestTemplate();
@@ -192,15 +174,12 @@ class AuthControllerIT {
         var oldConfirmationToken = VerifyMailUtils.extractTokenFromConfirmationToken(mailBody);
 
         var loginRequest = new LoginRequest(reqBody.getEmail(), reqBody.getPassword());
-        var result = mockMvc.perform(post("/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(loginRequest)))
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
                 .andExpect(status().isOk())
                 .andReturn();
         var accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
 
-        mockMvc.perform(get("/users/me").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performMe(mockMvc, accessToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(reqBody.getEmail()))
                 .andExpect(jsonPath("$.firstName").value(reqBody.getFirstName()))
@@ -209,8 +188,7 @@ class AuthControllerIT {
                 .andExpect(jsonPath("$.roles.length()").value(1))
                 .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_HOST.toString())));
 
-        mockMvc.perform(post("/auth/confirm-reset").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performResetConfirm(mockMvc, accessToken.toString())
                 .andExpect(status().isCreated());
 
         response = restTemplate.exchange("http://localhost:8025/api/v2/messages", HttpMethod.GET,
@@ -220,16 +198,13 @@ class AuthControllerIT {
                 reqBody.getEmail(), "Registration Confirmation");
         var newConfirmationToken = VerifyMailUtils.extractTokenFromConfirmationToken(mailBody);
 
-        var confirmUri = String.format("/auth/confirm/%s", oldConfirmationToken);
-        mockMvc.perform(post(confirmUri))
+        performConfirm(mockMvc, oldConfirmationToken.toString())
                 .andExpect(status().isNotFound());
 
-        confirmUri = String.format("/auth/confirm/%s", newConfirmationToken);
-        mockMvc.perform(post(confirmUri))
+        performConfirm(mockMvc, newConfirmationToken.toString())
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/users/me").
-                        header("Authorization", String.format("Bearer %s", accessToken)))
+        performMe(mockMvc, accessToken.toString())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value(reqBody.getEmail()))
                 .andExpect(jsonPath("$.firstName").value(reqBody.getFirstName()))
@@ -238,7 +213,7 @@ class AuthControllerIT {
                 .andExpect(jsonPath("$.roles.length()").value(1))
                 .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_HOST.toString())));
 
-        mockMvc.perform(post(confirmUri))
+        performConfirm(mockMvc, newConfirmationToken.toString())
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.message")
                         .value(ApiExceptionMessageConstants.CONFIRMATION_TOKEN_ALREADY_USED));
