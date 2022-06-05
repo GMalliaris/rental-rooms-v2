@@ -14,10 +14,12 @@
 	<name>rental-rooms</name>
 	<description>REST API emulation of a rental rooms application</description>
 	<properties>
+		<test.containers.version>1.17.1</test.containers.version>
 		<java.version>11</java.version>
-		<jwt.version>0.11.2</jwt.version>
+		<jwt.version>0.11.5</jwt.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
 		<sonar.organization>gmalliaris-rental-rooms-v2</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
 		<jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
@@ -63,7 +65,7 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
-			<version>8.5.7</version>
+			<version>8.5.11</version>
 		</dependency>
 
 		<dependency>
@@ -76,7 +78,7 @@
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>42.3.3</version>
+			<version>42.3.4</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -101,7 +103,7 @@
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson if Gson is preferred -->
-			<version>0.11.2</version>
+			<version>${jwt.version}</version>
 			<scope>runtime</scope>
 		</dependency>
 
@@ -116,7 +118,7 @@
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-inline</artifactId>
-			<version>4.4.0</version>
+			<version>4.5.1</version>
 			<scope>test</scope>
 		</dependency>
 
@@ -129,6 +131,27 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>${test.containers.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<version>${test.containers.version}</version>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>${test.containers.version}</version>
+			<scope>test</scope>
 		</dependency>
 
 
