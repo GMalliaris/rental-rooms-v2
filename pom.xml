@@ -14,15 +14,21 @@
 	<name>rental-rooms</name>
 	<description>REST API emulation of a rental rooms application</description>
 	<properties>
-		<test.containers.version>1.17.1</test.containers.version>
 		<java.version>11</java.version>
-		<jwt.version>0.11.5</jwt.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
+		<jwt.version>0.11.5</jwt.version>
+		<flyway.version>8.5.11</flyway.version>
+		<test.containers.version>1.17.1</test.containers.version>
+		<passay.version>1.6.1</passay.version>
+		<postgres.version>42.3.4</postgres.version>
+		<modelmapper.version>3.1.0</modelmapper.version>
+		<mockito-inline.version>4.5.1</mockito-inline.version>
+		<jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
+
 		<sonar.organization>gmalliaris-rental-rooms-v2</sonar.organization>
 		<sonar.host.url>https://sonarcloud.io</sonar.host.url>
-		<jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
 		<sonar.java.codeCoveragePlugin>jacoco</sonar.java.codeCoveragePlugin>
 		<sonar.tests>${project.basedir}/src/test/</sonar.tests>
 		<sonar.cpd.exclusions>**/model/*,**/entity/*</sonar.cpd.exclusions>
@@ -65,28 +71,21 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
-			<version>8.5.11</version>
+			<version>${flyway.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.passay</groupId>
 			<artifactId>passay</artifactId>
-			<version>1.6.1</version>
+			<version>${passay.version}</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
-			<version>42.3.4</version>
+			<version>${postgres.version}</version>
 			<scope>runtime</scope>
-		</dependency>
-
-		<!-- https://github.com/jwtk/jjwt -->
-		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
-			<scope>test</scope>
 		</dependency>
 
 		<dependency>
@@ -111,14 +110,14 @@
 		<dependency>
 			<groupId>org.modelmapper</groupId>
 			<artifactId>modelmapper</artifactId>
-			<version>3.1.0</version>
+			<version>${modelmapper.version}</version>
 		</dependency>
 
 		<!-- https://mvnrepository.com/artifact/org.mockito/mockito-inline -->
 		<dependency>
 			<groupId>org.mockito</groupId>
 			<artifactId>mockito-inline</artifactId>
-			<version>4.5.1</version>
+			<version>${mockito-inline.version}</version>
 			<scope>test</scope>
 		</dependency>
 
