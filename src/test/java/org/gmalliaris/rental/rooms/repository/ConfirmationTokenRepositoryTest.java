@@ -1,19 +1,26 @@
 package org.gmalliaris.rental.rooms.repository;
 
+import org.gmalliaris.rental.rooms.PostgresTestContainer;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.entity.ConfirmationToken;
 import org.gmalliaris.rental.rooms.entity.ConfirmationTokenStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.context.TestPropertySource;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(properties = {
+        PostgresTestContainer.DATA_JPA_TEST_JDBC_URL_PROPERTY
+})
 class ConfirmationTokenRepositoryTest {
 
     @Autowired

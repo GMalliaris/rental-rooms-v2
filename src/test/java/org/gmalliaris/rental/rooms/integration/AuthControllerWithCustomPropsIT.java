@@ -2,6 +2,8 @@ package org.gmalliaris.rental.rooms.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import org.gmalliaris.rental.rooms.MailHogTestContainer;
+import org.gmalliaris.rental.rooms.PostgresTestContainer;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
@@ -30,8 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "default.admin.password=1234",
     "jwt.refresh.expiration.minutes=2",
     "jwt.access.expiration.seconds=180"})
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-class AuthControllerWithCustomPropsIT {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class AuthControllerWithCustomPropsIT implements PostgresTestContainer, MailHogTestContainer {
 
     @Autowired
     private MockMvc mockMvc;

@@ -2,6 +2,8 @@ package org.gmalliaris.rental.rooms.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import org.gmalliaris.rental.rooms.MailHogTestContainer;
+import org.gmalliaris.rental.rooms.PostgresTestContainer;
 import org.gmalliaris.rental.rooms.RequestUtils;
 import org.gmalliaris.rental.rooms.VerifyMailUtils;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
@@ -32,8 +34,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @Transactional
 @AutoConfigureMockMvc
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-class AuthControllerIT {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer {
 
     @Autowired
     private MockMvc mockMvc;
@@ -121,7 +123,7 @@ class AuthControllerIT {
 
         var restTemplate = new RestTemplate();
 
-        var response = restTemplate.exchange("http://localhost:8025/api/v2/messages", HttpMethod.GET,
+        var response = restTemplate.exchange(getMailhogHttpUrl(), HttpMethod.GET,
                 null, String.class);
         var jsonRoot = objectMapper.readTree(response.getBody());
         var mailBody = VerifyMailUtils.verifyMailAndExtractBody(jsonRoot,
@@ -166,7 +168,7 @@ class AuthControllerIT {
 
         var restTemplate = new RestTemplate();
 
-        var response = restTemplate.exchange("http://localhost:8025/api/v2/messages", HttpMethod.GET,
+        var response = restTemplate.exchange(getMailhogHttpUrl(), HttpMethod.GET,
                 null, String.class);
         var jsonRoot = objectMapper.readTree(response.getBody());
         var mailBody = VerifyMailUtils.verifyMailAndExtractBody(jsonRoot,
@@ -191,7 +193,7 @@ class AuthControllerIT {
         performResetConfirm(mockMvc, accessToken.toString())
                 .andExpect(status().isCreated());
 
-        response = restTemplate.exchange("http://localhost:8025/api/v2/messages", HttpMethod.GET,
+        response = restTemplate.exchange(getMailhogHttpUrl(), HttpMethod.GET,
                 null, String.class);
         jsonRoot = objectMapper.readTree(response.getBody());
         mailBody = VerifyMailUtils.verifyMailAndExtractBody(jsonRoot,

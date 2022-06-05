@@ -1,16 +1,23 @@
 package org.gmalliaris.rental.rooms.repository;
 
+import org.gmalliaris.rental.rooms.PostgresTestContainer;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.entity.UserRole;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.context.TestPropertySource;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@TestPropertySource(properties = {
+        PostgresTestContainer.DATA_JPA_TEST_JDBC_URL_PROPERTY
+})
 class AccountUserRepositoryTest {
 
     @Autowired
