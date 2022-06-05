@@ -5,7 +5,7 @@ networks:
 
 services:
   postgres-db:
-    image: postgres:14.2-alpine
+    image: postgres:14.3-alpine
     restart: always
     ports:
       - "5432:5432"
