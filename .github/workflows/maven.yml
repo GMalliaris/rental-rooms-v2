@@ -60,14 +60,15 @@ jobs:
 
       - name: Create lower case Docker Image Name
         run: |
-          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
-          echo "DOCKER_IMAGE=ghcr.io/$OWNER_LC/rental-rooms-v2" >>${GITHUB_ENV}
+          echo "ACTOR_LC=${ACTOR,,}" >>${GITHUB_ENV}
+          echo "DOCKER_IMAGE=ghcr.io/$ACTOR_LC/ossp_flaskapp" >>${GITHUB_ENV}
         env:
-          OWNER: '${{ github.repository_owner }}'
+          ACTOR: '${{ github.actor }}'
 
       - name: Build and push Docker image
         uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
         with:
+          builder: ${{ steps.buildx.outputs.name }}
           context: .
           push: true
           tags: |
