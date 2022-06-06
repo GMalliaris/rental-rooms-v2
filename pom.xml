@@ -25,6 +25,7 @@
 		<postgres.version>42.3.4</postgres.version>
 		<modelmapper.version>3.1.0</modelmapper.version>
 		<mockito-inline.version>4.5.1</mockito-inline.version>
+		<maven-help-plugin.version>3.2.0</maven-help-plugin.version>
 		<jacoco-maven-plugin.version>0.8.3</jacoco-maven-plugin.version>
 
 		<sonar.organization>gmalliaris-rental-rooms-v2</sonar.organization>
@@ -161,6 +162,12 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-help-plugin</artifactId>
+				<version>${maven-help-plugin.version}</version>
 			</plugin>
 
 			<plugin>

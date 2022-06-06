@@ -55,9 +55,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Create lower case Docker Image Name
+      - name: Get Docker Image Name & Project Version
         run: |
           echo "DOCKER_IMAGE=ghcr.io/${ACTOR,,}/rental-rooms-v2" >>${GITHUB_ENV}
+          echo "VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )" >>${GITHUB_ENV}
         env:
           ACTOR: '${{ github.actor }}'
 
@@ -68,5 +69,6 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKER_IMAGE }}:${{ github.sha }}            
+            ${{ env.DOCKER_IMAGE }}:${{ env.VERSION }}
             ${{ env.DOCKER_IMAGE }}:latest
