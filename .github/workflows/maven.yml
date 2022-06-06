@@ -64,4 +64,4 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ lowercase(github.repository) }}:${{ github.sha }}
