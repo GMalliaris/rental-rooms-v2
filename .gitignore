@@ -1,5 +1,6 @@
 HELP.md
 target/
+dockerfiles/**
 src/main/resources/application-*.properties
 dbfiles/**
 dbfiles/*

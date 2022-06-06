@@ -12,7 +12,7 @@ services:
     volumes:
       - ./dockerfiles/postgres:/var/lib/postgresql/data
     networks:
-      backend:
+      - backend
     environment:
       POSTGRES_DB: rental-rooms
       POSTGRES_USER: rental-rooms
@@ -22,15 +22,21 @@ services:
     image: mailhog/mailhog:latest
     restart: always
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      - "1027:1025"
+      - "8027:8025"
 
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "8443:8443"
     networks:
-      backend:
+      - backend
     depends_on:
       - postgres-db
       - mailhog
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-db:5432/rental-rooms
+      SPRING_DATASOURCE_USERNAME: rental-rooms
+      SPRING_DATASOURCE_PASSWORD: rental-rooms
+      SPRING_MAIL_HOST: host.docker.internal
+      SPRING_MAIL_PORT: 1027
