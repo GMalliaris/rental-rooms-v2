@@ -64,5 +64,4 @@ jobs:
           context: .
           push: true
           tags: |
-            https://ghcr.io/${{ github.actor }}/${{ github.repository }}:${{ github.sha }}
-            https://ghcr.io/${{ github.actor }}/${{ github.repository }}:${{ github.event.release.tag_name }}
+            https://ghcr.io/${{ github.repository }}:${{ github.sha }}
