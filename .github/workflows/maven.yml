@@ -60,7 +60,7 @@ jobs:
 
       - name: Create lower case Docker Image Name
         run: |
-          echo "DOCKER_IMAGE=ghcr.io/${OWNER,,}/rental-rooms-v2" >>${GITHUB_ENV}
+          echo "DOCKER_IMAGE=ghcr.io/${ACTOR,,}/rental-rooms-v2" >>${GITHUB_ENV}
         env:
           ACTOR: '${{ github.actor }}'
 
