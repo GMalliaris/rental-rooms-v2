@@ -114,7 +114,7 @@ public class AccountUserService {
                 .orElseThrow(() -> {
                     var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
                             AccountUser.class, userId);
-                    throw new ApiException(HttpStatus.NOT_FOUND, errMsg);
+                    throw new IllegalStateException(errMsg);
                 });
     }
 

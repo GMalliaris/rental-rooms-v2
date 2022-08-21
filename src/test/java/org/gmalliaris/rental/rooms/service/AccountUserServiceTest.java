@@ -267,12 +267,11 @@ class AccountUserServiceTest {
         when(accountUserRepository.findById(any(UUID.class)))
                 .thenReturn(Optional.empty());
 
-        var exception = assertThrows(ApiException.class,
+        var exception = assertThrows(IllegalStateException.class,
                 () -> accountUserService.findAccountUserById(randomId));
         var errMsg = String.format(ApiExceptionMessageConstants.ENTITY_NOT_FOUND_TEMPLATE,
                 AccountUser.class, randomId);
         assertEquals(errMsg, exception.getMessage());
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatus());
     }
 
     @Test
