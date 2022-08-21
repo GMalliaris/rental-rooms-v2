@@ -1,5 +1,12 @@
 package org.gmalliaris.rental.rooms.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.gmalliaris.rental.rooms.config.exception.ApiException;
+import org.gmalliaris.rental.rooms.config.exception.ExceptionResponse;
 import org.gmalliaris.rental.rooms.dto.CurrentAccountUserResponse;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.gmalliaris.rental.rooms.service.SecurityService;
@@ -23,8 +30,21 @@ public class AccountUserController {
         this.modelMapper = modelMapper;
     }
 
+
     @GetMapping("/me")
     @Transactional(readOnly = true)
+    @Operation(summary = "Get information of current user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200",
+                    description = "Requested information",
+                    content = { @Content(schema = @Schema(implementation = CurrentAccountUserResponse.class)) }),
+            @ApiResponse(responseCode = "401",
+                    description = "Current user is unauthorized",
+                    content = { @Content(schema = @Schema(implementation = ExceptionResponse.class)) }),
+            @ApiResponse(responseCode = "500",
+                    description = "Current user not found",
+                    content = { @Content(schema = @Schema(implementation = ExceptionResponse.class)) })
+    })
     public CurrentAccountUserResponse findCurrentUser(){
         var currentUserId = securityService.getCurrentUserId();
         var currentUser = accountUserService.findAccountUserById(currentUserId);

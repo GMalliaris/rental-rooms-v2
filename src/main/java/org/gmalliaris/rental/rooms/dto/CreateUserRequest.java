@@ -1,5 +1,6 @@
 package org.gmalliaris.rental.rooms.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.util.PhoneNumber;
 import org.gmalliaris.rental.rooms.util.StrongPassword;
@@ -10,6 +11,7 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
 
+@Schema
 public class CreateUserRequest {
 
     @NotBlank(message = "Password is required and must not be blank")
