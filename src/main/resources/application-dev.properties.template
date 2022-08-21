@@ -1,0 +1,37 @@
+#default.admin.email=admin@admin.example.eg
+#default.admin.password=1234
+
+# db configuration
+spring.datasource.url=
+spring.datasource.username=
+spring.datasource.password=
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+spring.flyway.enabled=true
+
+# Mail config for gmail, follow https://support.google.com/accounts/answer/185833
+#spring.mail.protocol=smtp
+#spring.mail.host=smtp.gmail.com
+#spring.mail.port=587
+#spring.mail.username=rentalroomsdemo@gmail.com
+#spring.mail.password=qzsyppewrhsmrpui
+#spring.mail.properties.mail.smtp.auth=true
+#spring.mail.properties.mail.smtp.starttls.enable=true
+
+# mail server configuration for MailHog
+spring.mail.host=
+spring.mail.port=
+
+# https config properties
+server.ssl.enabled=true
+server.ssl.key-store=
+server.ssl.key-store-password=
+server.ssl.key-store-type=
+server.ssl.key-alias=
+server.ssl.key-password=
+server.port=
+
+springdoc.packagesToScan=org.gmalliaris.rental.rooms.controller
+springdoc.override-with-generic-response=false
+springdoc.default-produces-media-type=application/json
+springdoc.swagger-ui.enabled=true
