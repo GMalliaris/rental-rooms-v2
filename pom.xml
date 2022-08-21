@@ -159,7 +159,6 @@
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-ui</artifactId>
 			<version>${springdoc.version}</version>
-			<scope>compile</scope>
 		</dependency>
 
 		<dependency>

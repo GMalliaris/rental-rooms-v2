@@ -1,33 +1,51 @@
-package org.gmalliaris.rental.rooms.config.exception;
+package org.gmalliaris.rental.rooms.controller;
 
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.gmalliaris.rental.rooms.config.exception.ApiException;
+import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
+import org.gmalliaris.rental.rooms.config.exception.ExceptionMapResponse;
+import org.gmalliaris.rental.rooms.config.exception.ExceptionResponse;
+import org.gmalliaris.rental.rooms.dto.CurrentAccountUserResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.TreeMap;
 
-@ControllerAdvice
-@ResponseBody
+@RestControllerAdvice
 public class ExceptionControllerAdvice {
 
     private static final Logger logger = LoggerFactory.getLogger(ExceptionControllerAdvice.class);
 
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "500",
+                    description = "Internal error",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ExceptionResponse.class)) })
+    })
     public ExceptionResponse exception(Exception exception) {
         logException(exception);
         return new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR, exception.getMessage());
     }
 
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(IllegalStateException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "500",
+                    description = "Internal error",
+                    content = { @Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ExceptionResponse.class)) })
+    })
     public ExceptionResponse illegalStateException(IllegalStateException illegalStateException) {
         logException(illegalStateException);
         return new ExceptionResponse(HttpStatus.INTERNAL_SERVER_ERROR, illegalStateException.getMessage());
@@ -48,6 +66,7 @@ public class ExceptionControllerAdvice {
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ResponseEntity<ExceptionMapResponse> methodArgumentNotValidException(MethodArgumentNotValidException methodArgumentNotValidException){
         logException(methodArgumentNotValidException);
         var fieldErrorMap = new TreeMap<String, String>();
