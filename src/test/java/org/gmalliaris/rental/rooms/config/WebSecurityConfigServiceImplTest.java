@@ -3,12 +3,20 @@ package org.gmalliaris.rental.rooms.config;
 import org.gmalliaris.rental.rooms.service.AccountUserSecurityService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.security.AuthProvider;
+
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -24,12 +32,32 @@ class WebSecurityConfigServiceImplTest {
     @Mock
     private AccountUserSecurityService accountUserSecurityService;
 
+    @Mock
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
+
     @Test
-    void configureHttpSecurityTest() {
+    void configureHttpSecurityJwtFilterTest() {
          var mockHttpSecurity = mock(HttpSecurity.class);
 
          webSecurityConfigService.configureHttpSecurityJwtFilter(mockHttpSecurity);
          verify(mockHttpSecurity).addFilterBefore(jwtAuthFilter,
                  UsernamePasswordAuthenticationFilter.class);
+    }
+
+    @Test
+    void Test() {
+        var mockHttpSecurity = mock(HttpSecurity.class);
+
+        webSecurityConfigService.configureHttpSecurityAuthProvider(mockHttpSecurity);
+        var authProviderCaptor = ArgumentCaptor.forClass(AuthenticationProvider.class);
+
+        verify(mockHttpSecurity).authenticationProvider(authProviderCaptor.capture());
+        var authProvider = authProviderCaptor.getValue();
+        assertNotNull(authProvider);
+        assertEquals(DaoAuthenticationProvider.class, authProvider.getClass());
+        assertEquals(bCryptPasswordEncoder,
+                ReflectionTestUtils.invokeGetterMethod(authProvider, "getPasswordEncoder"));
+        assertEquals(accountUserSecurityService,
+                ReflectionTestUtils.invokeGetterMethod(authProvider, "getUserDetailsService"));
     }
 }
