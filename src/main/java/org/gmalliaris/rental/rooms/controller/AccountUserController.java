@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ExceptionResponse;
 import org.gmalliaris.rental.rooms.dto.CurrentAccountUserResponse;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/users")
+@SecurityRequirement(name = "BearerAccessToken")
 public class AccountUserController {
 
     private final AccountUserService accountUserService;

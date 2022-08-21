@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.gmalliaris.rental.rooms.config.exception.ExceptionResponse;
 import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
@@ -67,7 +68,7 @@ public class AuthController {
 
     @GetMapping("/refresh")
     @Transactional(readOnly = true)
-    @Operation(summary = "Refresh auth token(s)")
+    @Operation(summary = "Refresh auth token(s)", security = { @SecurityRequirement(name = "BearerRefreshToken") })
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200",
                     description = "Token(s) refreshed",
@@ -87,7 +88,7 @@ public class AuthController {
     @PostMapping("/confirm-reset")
     @ResponseStatus(HttpStatus.CREATED)
     @Transactional
-    @Operation(summary = "Resend user registration confirmation email")
+    @Operation(summary = "Resend user registration confirmation email", security = { @SecurityRequirement(name = "BearerAccessToken") })
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201",
                     description = "Registration confirmation email resent",
