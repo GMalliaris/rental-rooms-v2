@@ -10,7 +10,7 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./dockerfiles/postgres:/var/lib/postgresql/data
+      - ./.dockerfiles/postgres:/var/lib/postgresql/data
     networks:
       - backend
     environment:
