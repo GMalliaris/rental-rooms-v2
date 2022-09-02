@@ -47,7 +47,7 @@ public class AuthController {
                     description = "Invalid user email/phone number",
                     content = { @Content(schema = @Schema(implementation = ExceptionResponse.class)) })
     })
-    public void loginAccountUser(@RequestBody @Valid CreateUserRequest createUserRequest){
+    public void registerAccountUser(@RequestBody @Valid CreateUserRequest createUserRequest){
         accountUserService.createAccountUser(createUserRequest);
     }
 
