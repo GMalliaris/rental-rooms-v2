@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import org.gmalliaris.rental.rooms.MailHogTestContainer;
 import org.gmalliaris.rental.rooms.PostgresTestContainer;
+import org.gmalliaris.rental.rooms.RedisTestContainer;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
@@ -33,7 +34,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
     "jwt.refresh.expiration.minutes=2",
     "jwt.access.expiration.seconds=180"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class AuthControllerWithCustomPropsIT implements PostgresTestContainer, MailHogTestContainer {
+class AuthControllerWithCustomPropsIT implements PostgresTestContainer, MailHogTestContainer, RedisTestContainer {
 
     @Autowired
     private MockMvc mockMvc;

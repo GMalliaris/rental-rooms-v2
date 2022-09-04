@@ -2,10 +2,7 @@ package org.gmalliaris.rental.rooms.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
-import org.gmalliaris.rental.rooms.MailHogTestContainer;
-import org.gmalliaris.rental.rooms.PostgresTestContainer;
-import org.gmalliaris.rental.rooms.RequestUtils;
-import org.gmalliaris.rental.rooms.VerifyMailUtils;
+import org.gmalliaris.rental.rooms.*;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
@@ -35,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer {
+class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer, RedisTestContainer {
 
     @Autowired
     private MockMvc mockMvc;
