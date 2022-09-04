@@ -25,6 +25,16 @@ services:
       - "1027:1025"
       - "8027:8025"
 
+  redis:
+    image: "redis:alpine3.16"
+    restart: always
+    command: redis-server --requirepass redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./.dockerfiles/redis-data:/data
+      - ./.dockerfiles/redis-conf:/usr/local/etc/redis/redis.conf
+
   app:
     build: .
     ports:
