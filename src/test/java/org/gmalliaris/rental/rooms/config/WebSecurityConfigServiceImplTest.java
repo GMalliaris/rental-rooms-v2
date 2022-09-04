@@ -45,7 +45,7 @@ class WebSecurityConfigServiceImplTest {
     }
 
     @Test
-    void Test() {
+    void configureHttpSecurityAuthProviderTest() {
         var mockHttpSecurity = mock(HttpSecurity.class);
 
         webSecurityConfigService.configureHttpSecurityAuthProvider(mockHttpSecurity);

@@ -31,8 +31,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {"default.admin.email=customAdmin@example.eg",
     "default.admin.password=1234",
-    "jwt.refresh.expiration.minutes=2",
-    "jwt.access.expiration.seconds=180"})
+    "jwt.refreshExpirationMinutes=15",
+    "jwt.accessExpirationSeconds=180"})
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class AuthControllerWithCustomPropsIT implements PostgresTestContainer, MailHogTestContainer, RedisTestContainer {
 
@@ -78,6 +78,6 @@ class AuthControllerWithCustomPropsIT implements PostgresTestContainer, MailHogT
                         header("Authorization", String.format("Bearer %s", refreshToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
-                .andExpect(jsonPath("$.refreshToken").exists());
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
     }
 }

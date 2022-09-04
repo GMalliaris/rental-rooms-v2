@@ -1,10 +1,15 @@
 package org.gmalliaris.rental.rooms.service;
 
+import org.gmalliaris.rental.rooms.config.JwtConfigurationProperties;
 import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -17,15 +22,22 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class JwtServiceTest {
 
-    private final JwtService jwtService = new JwtService();
+    @InjectMocks
+    private JwtService jwtService;
+
+    @Mock
+    private JwtConfigurationProperties jwtConfigurationProperties;
 
     @Test
     void generateAccessTokenTest() {
 
         var accessTokenDuration = 120;
-        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", accessTokenDuration);
+        when(jwtConfigurationProperties.getAccessExpirationSeconds())
+                .thenReturn(accessTokenDuration);
+
         var accountUser = new AccountUser();
         accountUser.setEmail("random@example.eg");
 
@@ -62,7 +74,9 @@ class JwtServiceTest {
     void generateRefreshTokenTest() {
 
         var refreshTokenDuration = 60;
-        ReflectionTestUtils.setField(jwtService, "REFRESH_DURATION_MINUTES", refreshTokenDuration);
+        when(jwtConfigurationProperties.getRefreshExpirationMinutes())
+                .thenReturn(refreshTokenDuration);
+
         var accountUser = new AccountUser();
         accountUser.setEmail("random@example.eg");
 
@@ -109,7 +123,8 @@ class JwtServiceTest {
     void generateNewRefreshTokenTest_needsRefresh(){
 
         var authHeader = "header";
-        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", Integer.MAX_VALUE);
+        when(jwtConfigurationProperties.getRefreshExpirationMinutes())
+                .thenReturn(Integer.MAX_VALUE);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
             jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
@@ -133,7 +148,8 @@ class JwtServiceTest {
     void generateNewRefreshTokenTest_notNeedRefresh(){
 
         var authHeader = "header";
-        ReflectionTestUtils.setField(jwtService, "ACCESS_DURATION_SECONDS", Integer.MIN_VALUE);
+        when(jwtConfigurationProperties.getRefreshExpirationMinutes())
+                .thenReturn(Integer.MIN_VALUE);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
             jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))

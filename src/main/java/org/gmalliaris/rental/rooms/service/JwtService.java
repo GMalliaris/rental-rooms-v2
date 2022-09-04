@@ -1,9 +1,9 @@
 package org.gmalliaris.rental.rooms.service;
 
+import org.gmalliaris.rental.rooms.config.JwtConfigurationProperties;
 import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.util.JwtUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -14,13 +14,11 @@ import java.util.Objects;
 @Service
 public class JwtService {
 
-    @Value("${jwt.access.expiration.seconds: 120}")
-    @SuppressWarnings("java:S116") // Exclude Constants from regex naming rule
-    private int ACCESS_DURATION_SECONDS;
+    private final JwtConfigurationProperties jwtConfigurationProperties;
 
-    @Value("${jwt.refresh.expiration.minutes: 60}")
-    @SuppressWarnings("java:S116") // Exclude Constants from regex naming rule
-    private int REFRESH_DURATION_MINUTES;
+    public JwtService(JwtConfigurationProperties jwtConfigurationProperties) {
+        this.jwtConfigurationProperties = jwtConfigurationProperties;
+    }
 
     public String generateAccessToken(AccountUser user){
         return generateToken(user, JwtType.ACCESS);
@@ -39,10 +37,10 @@ public class JwtService {
         var created = Instant.now();
         Instant expiration;
         if (type == JwtType.ACCESS){
-            expiration = created.plusSeconds(ACCESS_DURATION_SECONDS);
+            expiration = created.plusSeconds(jwtConfigurationProperties.getAccessExpirationSeconds());
         }
         else {
-            expiration = created.plus(REFRESH_DURATION_MINUTES, ChronoUnit.MINUTES);
+            expiration = created.plus(jwtConfigurationProperties.getRefreshExpirationMinutes(), ChronoUnit.MINUTES);
         }
 
         return JwtUtils.generateToken(Date.from(created), Date.from(expiration),
@@ -61,7 +59,7 @@ public class JwtService {
 
         var delay = 60;
         var diff = ChronoUnit.SECONDS.between(now, expiration.toInstant());
-        if (diff + delay < ACCESS_DURATION_SECONDS){
+        if (diff + delay < jwtConfigurationProperties.getRefreshExpirationMinutes()){
             return generateToken(user, JwtType.REFRESH);
         }
         return null;
