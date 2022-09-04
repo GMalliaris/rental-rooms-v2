@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@Profile("test-security")
+@Profile("disable-jwt-auth")
 @ComponentScan("org.gmalliaris.rental.rooms.config")
 public class UnitTestConfig {
 

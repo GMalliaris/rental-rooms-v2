@@ -9,7 +9,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile("!test-security")
+@Profile("!disable-jwt-auth")
 public class WebSecurityConfigServiceImpl implements WebSecurityConfigService {
 
     private final JwtAuthFilter jwtAuthFilter;

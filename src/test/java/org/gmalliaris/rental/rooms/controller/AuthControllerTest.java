@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(AuthController.class)
 @Import(UnitTestConfig.class)
-@ActiveProfiles("test-security")
+@ActiveProfiles("disable-jwt-auth")
 class AuthControllerTest {
 
     @MockBean

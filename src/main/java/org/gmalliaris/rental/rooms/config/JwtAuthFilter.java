@@ -4,6 +4,7 @@ import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.service.AccountUserSecurityService;
 import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.springframework.context.annotation.Profile;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,9 +17,9 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
-// Else you'd have to use @MockBean for AccountUserSecurityServic
+// Else you'd have to use @MockBean for AccountUserSecurityService
 // on every WebMvcTest
-@Profile("!test-security")
+@Profile("!disable-jwt-auth")
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private static final String BEARER_HEADER = "Authorization";
@@ -31,7 +32,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
             throws ServletException, IOException {
 
         var requestURI = request.getRequestURI();
