@@ -127,7 +127,7 @@ class JwtServiceTest {
                 .thenReturn(Integer.MAX_VALUE);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
                     .thenAnswer( a -> {
                        var exp = Date.from(Instant.now());
                        return Optional.of(exp);
@@ -153,7 +153,7 @@ class JwtServiceTest {
                 .thenReturn(Integer.MIN_VALUE);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
                     .thenAnswer( a -> {
                         var exp = Date.from(Instant.now());
                         return Optional.of(exp);

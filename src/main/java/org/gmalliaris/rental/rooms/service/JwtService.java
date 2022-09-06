@@ -49,7 +49,7 @@ public class JwtService {
 
     public String generateNewRefreshToken(AccountUser user, String authHeader){
 
-        var expiration = JwtUtils.extractExpirationFromHeader(authHeader, JwtType.REFRESH)
+        var expiration = JwtUtils.extractExpirationFromHeader(authHeader)
                 .orElseThrow(() -> {
                     var errMsg = "Invalid token, expiration is missing.";
                     throw new IllegalStateException(errMsg);

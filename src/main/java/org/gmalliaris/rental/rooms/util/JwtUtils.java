@@ -16,7 +16,8 @@ public final class JwtUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(JwtUtils.class);
 
-    private static final String ISS = "rental-rooms-api";
+    private static final String ISS_AUD = "rental-rooms-api";
+    private static final String TOKEN_GROUP_CUSTOM_CLAIM = "tgid";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final SecretKey SIGN_KEY = Keys.secretKeyFor(SignatureAlgorithm.HS256);
 
@@ -28,9 +29,9 @@ public final class JwtUtils {
                                        JwtType type, UUID userId){
 
         return Jwts.builder()
-                .setClaims(Map.of("tgid", UUID.randomUUID().toString()))
-                .setIssuer(ISS)
-                .setAudience(ISS)
+                .setClaims(Map.of(TOKEN_GROUP_CUSTOM_CLAIM, UUID.randomUUID().toString()))
+                .setIssuer(ISS_AUD)
+                .setAudience(ISS_AUD)
                 .setSubject(String.format("%s_%s", type.getValue(), userId))
                 .setIssuedAt(issuedAt)
                 .setExpiration(expiration)
@@ -43,8 +44,8 @@ public final class JwtUtils {
             throws JwtException {
 
         return Jwts.parserBuilder()
-                .requireIssuer(ISS)
-                .requireAudience(ISS)
+                .requireIssuer(ISS_AUD)
+                .requireAudience(ISS_AUD)
                 .setSigningKey(SIGN_KEY)
                 .build()
                 .parseClaimsJws(token);
@@ -88,7 +89,7 @@ public final class JwtUtils {
         }
     }
 
-    public static Optional<Date> extractExpirationFromToken(String token, JwtType type)
+    public static Optional<Date> extractExpirationFromToken(String token)
             throws JwtException{
 
         var claims = extractClaims(token).getBody();
@@ -98,7 +99,7 @@ public final class JwtUtils {
         return Optional.ofNullable(claims.getExpiration());
     }
 
-    public static Optional<Date> extractExpirationFromHeader(String authorizationHeader, JwtType type){
+    public static Optional<Date> extractExpirationFromHeader(String authorizationHeader){
 
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)){
             return Optional.empty();
@@ -106,7 +107,7 @@ public final class JwtUtils {
 
         var token = authorizationHeader.substring(BEARER_PREFIX.length());
         try {
-            return extractExpirationFromToken(token, type);
+            return extractExpirationFromToken(token);
         }
         catch (JwtException exception) {
             logger.debug("Failed to parse jwt: exception of class {}", exception.getClass());

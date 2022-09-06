@@ -34,7 +34,7 @@ class JwtUtilsTest {
     @Test
     void extractClaimsTest_invalidSignature(){
 
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS");
+        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
         var key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
         var now = Instant.now();
         var exp = now.plusSeconds(600);
@@ -59,7 +59,7 @@ class JwtUtilsTest {
     @Test
     void extractClaimsTest_invalidIssuer(){
 
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS");
+        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
         var key = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
         var now = Instant.now();
         var exp = now.plusSeconds(600);
@@ -84,7 +84,7 @@ class JwtUtilsTest {
     @Test
     void extractClaimsTest_invalidAudience(){
 
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS");
+        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
         var key = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
         var now = Instant.now();
         var exp = now.plusSeconds(600);
@@ -110,7 +110,7 @@ class JwtUtilsTest {
     void extractClaimsTest_expired(){
 
         var key = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS");
+        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
         var now = Instant.now();
         var exp = now.minusSeconds(600);
         var userId = UUID.randomUUID();
@@ -364,10 +364,10 @@ class JwtUtilsTest {
             var mockJws = mock(Jws.class);
             jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
                     .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
                     .thenCallRealMethod();
 
-            var result = JwtUtils.extractExpirationFromToken(token, type);
+            var result = JwtUtils.extractExpirationFromToken(token);
             assertNotNull(result);
             assertTrue(result.isEmpty());
             jwtUtils.verify(() -> JwtUtils.extractClaims(token));
@@ -385,10 +385,10 @@ class JwtUtilsTest {
                     .thenReturn(mock(Claims.class));
             jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
                     .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
                     .thenCallRealMethod();
 
-            var result = JwtUtils.extractExpirationFromToken(token, type);
+            var result = JwtUtils.extractExpirationFromToken(token);
             assertNotNull(result);
             assertTrue(result.isEmpty());
             jwtUtils.verify(() -> JwtUtils.extractClaims(token));
@@ -411,10 +411,10 @@ class JwtUtilsTest {
                     .thenReturn(mockClaims);
             jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
                     .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
                     .thenCallRealMethod();
 
-            var result = JwtUtils.extractExpirationFromToken(token, type);
+            var result = JwtUtils.extractExpirationFromToken(token);
             assertNotNull(result);
             assertTrue(result.isPresent());
             assertEquals(now, result.get());
@@ -424,7 +424,7 @@ class JwtUtilsTest {
 
     @Test
     void extractExpirationFromHeaderTest_nullHeader(){
-        var result = JwtUtils.extractExpirationFromHeader(null, ACCESS);
+        var result = JwtUtils.extractExpirationFromHeader(null);
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -432,7 +432,7 @@ class JwtUtilsTest {
     @Test
     void extractExpirationFromHeaderTest_invalidHeader(){
         var invalidHeader = "Bearer- test";
-        var result = JwtUtils.extractExpirationFromHeader(invalidHeader, ACCESS);
+        var result = JwtUtils.extractExpirationFromHeader(invalidHeader);
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -443,15 +443,15 @@ class JwtUtilsTest {
 
         try (var jwtUtils = mockStatic(JwtUtils.class)){
 
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
                     .thenThrow(JwtException.class);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
                     .thenCallRealMethod();
 
-            var result = JwtUtils.extractExpirationFromHeader(invalidHeader, ACCESS);
+            var result = JwtUtils.extractExpirationFromHeader(invalidHeader);
             assertNotNull(result);
             assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test", ACCESS));
+            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test"));
         }
     }
 
@@ -462,16 +462,16 @@ class JwtUtilsTest {
 
         try (var jwtUtils = mockStatic(JwtUtils.class)){
 
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
                     .thenReturn(Optional.of(now));
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString(), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
                     .thenCallRealMethod();
 
-            var result = JwtUtils.extractExpirationFromHeader(invalidHeader, ACCESS);
+            var result = JwtUtils.extractExpirationFromHeader(invalidHeader);
             assertNotNull(result);
             assertTrue(result.isPresent());
             assertEquals(now, result.get());
-            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test", ACCESS));
+            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test"));
         }
     }
 }
