@@ -11,7 +11,7 @@ public class WebSecurityConfigServiceTestImpl implements WebSecurityConfigServic
     }
 
     @Override
-    public void configureHttpSecurityAuthProvider(HttpSecurity httpSecurity) {
+    public void configureHttpSecurityAuthenticationProvider(HttpSecurity httpSecurity) {
         // Do nothing
     }
 }

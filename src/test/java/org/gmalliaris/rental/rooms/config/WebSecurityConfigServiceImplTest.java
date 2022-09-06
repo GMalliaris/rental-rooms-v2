@@ -14,11 +14,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.security.AuthProvider;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class WebSecurityConfigServiceImplTest {
@@ -48,7 +47,7 @@ class WebSecurityConfigServiceImplTest {
     void configureHttpSecurityAuthProviderTest() {
         var mockHttpSecurity = mock(HttpSecurity.class);
 
-        webSecurityConfigService.configureHttpSecurityAuthProvider(mockHttpSecurity);
+        webSecurityConfigService.configureHttpSecurityAuthenticationProvider(mockHttpSecurity);
         var authProviderCaptor = ArgumentCaptor.forClass(AuthenticationProvider.class);
 
         verify(mockHttpSecurity).authenticationProvider(authProviderCaptor.capture());

@@ -28,7 +28,7 @@ public class WebSecurityConfigServiceImpl implements WebSecurityConfigService {
     }
 
     @Override
-    public void configureHttpSecurityAuthProvider(HttpSecurity httpSecurity) {
+    public void configureHttpSecurityAuthenticationProvider(HttpSecurity httpSecurity) {
         var authProvider = new DaoAuthenticationProvider();
         authProvider.setPasswordEncoder(bCryptPasswordEncoder);
         authProvider.setUserDetailsService(accountUserSecurityService);
