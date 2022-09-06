@@ -31,7 +31,7 @@ public class AccountUserSecurityService implements UserDetailsService {
     }
 
     @Transactional(readOnly = true)
-    public UserDetails loadUserById(UUID userId) throws UsernameNotFoundException {
+    public UserDetails loadUserById(UUID userId) {
 
         var optionalUser = accountUserRepository.findById(userId);
         if (optionalUser.isEmpty()){

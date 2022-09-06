@@ -10,12 +10,12 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,11 +39,11 @@ class JwtServiceTest {
                 .thenReturn(accessTokenDuration);
 
         var accountUser = new AccountUser();
-        accountUser.setEmail("random@example.eg");
+        accountUser.setId(UUID.randomUUID());
 
         try (var jwtUtils = mockStatic(JwtUtils.class)) {
             jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class),
-                            any(Date.class), any(JwtType.class), anyString()))
+                            any(Date.class), any(JwtType.class), any(UUID.class)))
                     .thenReturn("generatedToken");
 
             var token = jwtService.generateAccessToken(accountUser);
@@ -52,20 +52,20 @@ class JwtServiceTest {
 
             var dateCapturer = ArgumentCaptor.forClass(Date.class);
             var typeCapturer = ArgumentCaptor.forClass(JwtType.class);
-            var stringCapturer = ArgumentCaptor.forClass(String.class);
+            var uuidCapturer = ArgumentCaptor.forClass(UUID.class);
             jwtUtils.verify(() -> JwtUtils.generateToken(
                     dateCapturer.capture(), dateCapturer.capture(),
-                    typeCapturer.capture(), stringCapturer.capture()));
+                    typeCapturer.capture(), uuidCapturer.capture()));
             var dates = dateCapturer.getAllValues();
             var issuedAt = dates.get(0);
             var expiration = dates.get(1);
             var type = typeCapturer.getValue();
-            var email = stringCapturer.getValue();
+            var uuid = uuidCapturer.getValue();
             assertNotNull(issuedAt);
             assertNotNull(expiration);
             var diff = ChronoUnit.SECONDS.between(issuedAt.toInstant(), expiration.toInstant());
             assertEquals(accessTokenDuration, diff);
-            assertEquals("random@example.eg", email);
+            assertEquals(accountUser.getId(), uuid);
             assertEquals(JwtType.ACCESS, type);
         }
     }
@@ -78,11 +78,11 @@ class JwtServiceTest {
                 .thenReturn(refreshTokenDuration);
 
         var accountUser = new AccountUser();
-        accountUser.setEmail("random@example.eg");
+        accountUser.setId(UUID.randomUUID());
 
         try (var jwtUtils = mockStatic(JwtUtils.class)) {
             jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class),
-                            any(Date.class), any(JwtType.class), anyString()))
+                            any(Date.class), any(JwtType.class), any(UUID.class)))
                     .thenReturn("generatedToken");
 
             var token = jwtService.generateRefreshToken(accountUser);
@@ -91,20 +91,20 @@ class JwtServiceTest {
 
             var dateCapturer = ArgumentCaptor.forClass(Date.class);
             var typeCapturer = ArgumentCaptor.forClass(JwtType.class);
-            var stringCapturer = ArgumentCaptor.forClass(String.class);
+            var uuidCapturer = ArgumentCaptor.forClass(UUID.class);
             jwtUtils.verify(() -> JwtUtils.generateToken(
                     dateCapturer.capture(), dateCapturer.capture(),
-                    typeCapturer.capture(), stringCapturer.capture()));
+                    typeCapturer.capture(), uuidCapturer.capture()));
             var dates = dateCapturer.getAllValues();
             var issuedAt = dates.get(0);
             var expiration = dates.get(1);
             var type = typeCapturer.getValue();
-            var email = stringCapturer.getValue();
+            var uuid = uuidCapturer.getValue();
             assertNotNull(issuedAt);
             assertNotNull(expiration);
             var diff = ChronoUnit.MINUTES.between(issuedAt.toInstant(), expiration.toInstant());
             assertEquals(refreshTokenDuration, diff);
-            assertEquals("random@example.eg", email);
+            assertEquals(accountUser.getId(), uuid);
             assertEquals(JwtType.REFRESH, type);
         }
     }
@@ -133,11 +133,12 @@ class JwtServiceTest {
                        return Optional.of(exp);
                     });
             jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class), any(Date.class),
-                    any(JwtType.class), anyString()))
+                    any(JwtType.class), any(UUID.class)))
                     .thenReturn("refreshToken");
 
             var user = mock(AccountUser.class);
-            when(user.getEmail()).thenReturn("email@example.eg");
+            var userId = UUID.randomUUID();
+            when(user.getId()).thenReturn(userId);
             var result = jwtService.generateNewRefreshToken(user, authHeader);
             assertNotNull(result);
             assertEquals("refreshToken", result);
@@ -161,7 +162,7 @@ class JwtServiceTest {
             var result = jwtService.generateNewRefreshToken(mock(AccountUser.class), authHeader);
             assertNull(result);
             jwtUtils.verify(() -> JwtUtils.generateToken(any(Date.class), any(Date.class),
-                            any(JwtType.class), anyString()), never());
+                            any(JwtType.class), any(UUID.class)), never());
         }
     }
 }

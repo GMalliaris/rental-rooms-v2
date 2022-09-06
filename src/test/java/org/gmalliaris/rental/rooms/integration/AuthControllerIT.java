@@ -111,6 +111,34 @@ class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer, R
     }
 
     @Test
+    void userRegistersAndCanLogin_throwsBecauseNotAccessToken() throws Exception {
+        var email = "testUser@example.eg";
+        var password = "12345678aA!";
+        var firstName = "first-name";
+        var lastName = "last-name";
+        var phoneNumber = "+30 6988888888";
+        var rolesList = List.of(UserRoleName.ROLE_HOST, UserRoleName.ROLE_GUEST);
+
+        var registerRequest = new CreateUserRequest(password, email, firstName, lastName, phoneNumber, rolesList);
+        performRegister(mockMvc, objectMapper.writeValueAsString(registerRequest))
+                .andExpect(status().isCreated());
+
+        var loginRequest = new LoginRequest(email, password);
+
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var accessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
+        var refreshToken = JsonPath.read(result.getResponse().getContentAsString(), "$.refreshToken");
+        assertNotNull(accessToken);
+        assertNotNull(refreshToken);
+
+        performMe(mockMvc, refreshToken.toString())
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void registerUserAndConfirm() throws Exception {
         var reqBody = new CreateUserRequest("12345678aA!", "malliaris@example.eg", "first",
                 "lastName", "+30 6912345679", List.of(UserRoleName.ROLE_HOST));

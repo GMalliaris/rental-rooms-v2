@@ -8,7 +8,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 public final class JwtUtils {
 
@@ -23,40 +25,53 @@ public final class JwtUtils {
     }
 
     public static String generateToken(Date issuedAt, Date expiration,
-                                       JwtType type, String email){
+                                       JwtType type, UUID userId){
 
         return Jwts.builder()
+                .setClaims(Map.of("tgid", UUID.randomUUID().toString()))
                 .setIssuer(ISS)
-                .setSubject(type.getValue())
+                .setAudience(ISS)
+                .setSubject(String.format("%s_%s", type.getValue(), userId))
                 .setIssuedAt(issuedAt)
                 .setExpiration(expiration)
-                .setId(email)
+                .setId(UUID.randomUUID().toString())
                 .signWith(SIGN_KEY)
                 .compact();
     }
 
-    public static Jws<Claims> extractClaims(String token, JwtType type)
+    public static Jws<Claims> extractClaims(String token)
             throws JwtException {
 
         return Jwts.parserBuilder()
                 .requireIssuer(ISS)
-                .requireSubject(type.getValue())
+                .requireAudience(ISS)
                 .setSigningKey(SIGN_KEY)
                 .build()
                 .parseClaimsJws(token);
     }
 
-    public static Optional<String> extractUserEmailFromToken(String token, JwtType type)
+    public static Optional<UUID> extractUserIdFromToken(String token, JwtType type)
             throws JwtException{
 
-        var claims = extractClaims(token, type).getBody();
+        var claims = extractClaims(token).getBody();
         if (claims == null){
             return Optional.empty();
         }
-        return Optional.ofNullable(claims.getId());
+
+        var subject = claims.getSubject();
+        if (subject == null) {
+            return Optional.empty();
+        }
+
+        var subjectIdComponents = subject.split("_");
+        if (subjectIdComponents.length != 2
+            || !type.getValue().equals(subjectIdComponents[0])) {
+            return Optional.empty();
+        }
+        return CommonUtils.uuidFromString(subjectIdComponents[1]);
     }
 
-    public static Optional<String> extractUserEmailFromHeader(String authorizationHeader, JwtType type){
+    public static Optional<UUID> extractUserIdFromHeader(String authorizationHeader, JwtType type){
 
         if (authorizationHeader == null || !authorizationHeader.startsWith(BEARER_PREFIX)){
             return Optional.empty();
@@ -64,7 +79,7 @@ public final class JwtUtils {
 
         var token = authorizationHeader.substring(BEARER_PREFIX.length());
         try {
-            return extractUserEmailFromToken(token, type);
+            return extractUserIdFromToken(token, type);
         }
         catch (JwtException exception) {
             logger.debug("Failed to parse jwt: exception of class {}", exception.getClass());
@@ -76,7 +91,7 @@ public final class JwtUtils {
     public static Optional<Date> extractExpirationFromToken(String token, JwtType type)
             throws JwtException{
 
-        var claims = extractClaims(token, type).getBody();
+        var claims = extractClaims(token).getBody();
         if (claims == null){
             return Optional.empty();
         }

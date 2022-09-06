@@ -40,9 +40,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 ? JwtType.REFRESH : JwtType.ACCESS;
 
         var header = request.getHeader(BEARER_HEADER);
-        var emailOptional = JwtUtils.extractUserEmailFromHeader(header, type);
-        if (emailOptional.isPresent()){
-            var userDetails = accountUserSecurityService.loadUserByUsername(emailOptional.get());
+        var userIdOptional = JwtUtils.extractUserIdFromHeader(header, type);
+        if (userIdOptional.isPresent()){
+            var userDetails = accountUserSecurityService.loadUserById(userIdOptional.get());
             if (userDetails != null){
                 var userPwdAuth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(userPwdAuth);

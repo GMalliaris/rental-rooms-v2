@@ -31,7 +31,7 @@ public class JwtService {
     private String generateToken(AccountUser user, JwtType type){
 
         Objects.requireNonNull(user);
-        Objects.requireNonNull(user.getEmail());
+        Objects.requireNonNull(user.getId());
         Objects.requireNonNull(type);
 
         var created = Instant.now();
@@ -44,7 +44,7 @@ public class JwtService {
         }
 
         return JwtUtils.generateToken(Date.from(created), Date.from(expiration),
-                type, user.getEmail());
+                type, user.getId());
     }
 
     public String generateNewRefreshToken(AccountUser user, String authHeader){

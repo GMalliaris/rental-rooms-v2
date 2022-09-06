@@ -18,6 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -40,12 +41,12 @@ class JwtAuthFilterTest {
                 .thenReturn(null);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
-            jwtUtils.when(() -> JwtUtils.extractUserEmailFromHeader(nullable(String.class), any(JwtType.class)))
+            jwtUtils.when(() -> JwtUtils.extractUserIdFromHeader(nullable(String.class), any(JwtType.class)))
                     .thenCallRealMethod();
 
             filter.doFilterInternal(mockRequest, mock(HttpServletResponse.class), mock(FilterChain.class));
 
-            jwtUtils.verify(() -> JwtUtils.extractUserEmailFromHeader(null, JwtType.ACCESS));
+            jwtUtils.verify(() -> JwtUtils.extractUserIdFromHeader(null, JwtType.ACCESS));
             verify(accountUserSecurityService, never()).loadUserByUsername(anyString());
         }
     }
@@ -60,16 +61,16 @@ class JwtAuthFilterTest {
                 .thenReturn(token);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
-            var email = "email@example.eg";
-            jwtUtils.when(() -> JwtUtils.extractUserEmailFromHeader(nullable(String.class), any(JwtType.class)))
-                    .thenReturn(Optional.of(email));
-            when(accountUserSecurityService.loadUserByUsername(anyString()))
+            var userId = UUID.randomUUID();
+            jwtUtils.when(() -> JwtUtils.extractUserIdFromHeader(nullable(String.class), any(JwtType.class)))
+                    .thenReturn(Optional.of(userId));
+            when(accountUserSecurityService.loadUserById(any(UUID.class)))
                     .thenReturn(null);
 
             filter.doFilterInternal(mockRequest, mock(HttpServletResponse.class), mock(FilterChain.class));
 
-            jwtUtils.verify(() -> JwtUtils.extractUserEmailFromHeader(token, JwtType.ACCESS));
-            verify(accountUserSecurityService).loadUserByUsername(email);
+            jwtUtils.verify(() -> JwtUtils.extractUserIdFromHeader(token, JwtType.ACCESS));
+            verify(accountUserSecurityService).loadUserById(userId);
         }
     }
 
@@ -83,20 +84,20 @@ class JwtAuthFilterTest {
                 .thenReturn(token);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
-            var email = "email@example.eg";
-            jwtUtils.when(() -> JwtUtils.extractUserEmailFromHeader(nullable(String.class), any(JwtType.class)))
-                    .thenReturn(Optional.of(email));
+            var userId = UUID.randomUUID();
+            jwtUtils.when(() -> JwtUtils.extractUserIdFromHeader(nullable(String.class), any(JwtType.class)))
+                    .thenReturn(Optional.of(userId));
 
             var mockUserDetails = mock(UserDetails.class);
             when(mockUserDetails.getAuthorities())
                     .thenReturn(List.of());
-            when(accountUserSecurityService.loadUserByUsername(anyString()))
+            when(accountUserSecurityService.loadUserById(any(UUID.class)))
                     .thenReturn(mockUserDetails);
 
             filter.doFilterInternal(mockRequest, mock(HttpServletResponse.class), mock(FilterChain.class));
 
-            jwtUtils.verify(() -> JwtUtils.extractUserEmailFromHeader(token, JwtType.ACCESS));
-            verify(accountUserSecurityService).loadUserByUsername(email);
+            jwtUtils.verify(() -> JwtUtils.extractUserIdFromHeader(token, JwtType.ACCESS));
+            verify(accountUserSecurityService).loadUserById(userId);
         }
     }
 
@@ -112,20 +113,20 @@ class JwtAuthFilterTest {
                 .thenReturn(token);
 
         try(var jwtUtils = mockStatic(JwtUtils.class)){
-            var email = "email@example.eg";
-            jwtUtils.when(() -> JwtUtils.extractUserEmailFromHeader(nullable(String.class), any(JwtType.class)))
-                    .thenReturn(Optional.of(email));
+            var userId = UUID.randomUUID();
+            jwtUtils.when(() -> JwtUtils.extractUserIdFromHeader(nullable(String.class), any(JwtType.class)))
+                    .thenReturn(Optional.of(userId));
 
             var mockUserDetails = mock(UserDetails.class);
             when(mockUserDetails.getAuthorities())
                     .thenReturn(List.of());
-            when(accountUserSecurityService.loadUserByUsername(anyString()))
+            when(accountUserSecurityService.loadUserById(any(UUID.class)))
                     .thenReturn(mockUserDetails);
 
             filter.doFilterInternal(mockRequest, mock(HttpServletResponse.class), mock(FilterChain.class));
 
-            jwtUtils.verify(() -> JwtUtils.extractUserEmailFromHeader(token, JwtType.REFRESH));
-            verify(accountUserSecurityService).loadUserByUsername(email);
+            jwtUtils.verify(() -> JwtUtils.extractUserIdFromHeader(token, JwtType.REFRESH));
+            verify(accountUserSecurityService).loadUserById(userId);
         }
     }
 }
