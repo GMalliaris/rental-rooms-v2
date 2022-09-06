@@ -9,8 +9,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -44,6 +46,31 @@ class AccountUserSecurityServiceTest {
                 .thenReturn(Optional.of(user));
 
         var result = accountUserSecurityService.loadUserByUsername(email);
+        assertNotNull(result);
+        assertEquals(email, result.getUsername());
+    }
+
+    @Test
+    void loadUserById_noUserFound() {
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.empty());
+
+        var userId = UUID.randomUUID();
+        var result = accountUserSecurityService.loadUserById(userId);
+        assertNull(result);
+    }
+
+    @Test
+    void loadUserById_userFound() {
+        var email = "random@example.eg";
+        var userId = UUID.randomUUID();
+        var user = mock(AccountUser.class);
+        when(user.getEmail()).thenReturn(email);
+
+        when(accountUserRepository.findById(any(UUID.class)))
+                .thenReturn(Optional.of(user));
+
+        var result = accountUserSecurityService.loadUserById(userId);
         assertNotNull(result);
         assertEquals(email, result.getUsername());
     }
