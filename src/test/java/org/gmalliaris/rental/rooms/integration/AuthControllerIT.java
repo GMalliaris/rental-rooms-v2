@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,9 @@ class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer, R
 
     @Autowired
     private AccountUserRepository accountUserRepository;
+
+    @Autowired
+    private RedisTemplate<String, String> redisTemplate;
 
     @Test
     void adminUserExistsAndCanLogin() throws Exception {
@@ -74,6 +78,58 @@ class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer, R
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.accessToken").exists())
                 .andExpect(jsonPath("$.refreshToken").doesNotExist());
+    }
+
+    @Test
+    void adminUserExistsAndLogoutAsExpected() throws Exception {
+        var adminUsersCount = accountUserRepository.countAdminAccountUsers();
+        assertEquals(1, adminUsersCount);
+
+        var loginRequest = new LoginRequest("admin@example.eg",
+                "12345678");
+
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var firstAccessToken = JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
+        var refreshToken = JsonPath.read(result.getResponse().getContentAsString(), "$.refreshToken");
+        assertNotNull(firstAccessToken);
+        assertNotNull(refreshToken);
+
+        performMe(mockMvc, firstAccessToken.toString())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("admin@example.eg"))
+                .andExpect(jsonPath("$.firstName").value("Admin"))
+                .andExpect(jsonPath("$.lastName").value("istrator"))
+                .andExpect(jsonPath("$.enabled").value(true))
+                .andExpect(jsonPath("$.roles.length()").value(1))
+                .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_ADMIN.toString())));
+
+        var refreshResult = performRefreshTokens(mockMvc, refreshToken.toString())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.accessToken").exists())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
+                .andReturn();
+        var secondAccessToken = JsonPath.read(refreshResult.getResponse().getContentAsString(), "$.accessToken");
+        performMe(mockMvc, secondAccessToken.toString())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("admin@example.eg"))
+                .andExpect(jsonPath("$.firstName").value("Admin"))
+                .andExpect(jsonPath("$.lastName").value("istrator"))
+                .andExpect(jsonPath("$.enabled").value(true))
+                .andExpect(jsonPath("$.roles.length()").value(1))
+                .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_ADMIN.toString())));
+
+        performLogout(mockMvc, secondAccessToken.toString())
+                .andExpect(status().isNoContent());
+
+        performMe(mockMvc, firstAccessToken.toString())
+                .andExpect(status().isUnauthorized());
+        performMe(mockMvc, secondAccessToken.toString())
+                .andExpect(status().isUnauthorized());
+        performRefreshTokens(mockMvc, refreshToken.toString())
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

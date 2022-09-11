@@ -45,8 +45,7 @@ class BlacklistServiceTest {
 
         blacklistService.blacklistTokenGroup(tokenGroupId);
         verify(redisTemplate).opsForValue();
-        verify(mockOps).set(tokenGroupId, TOKEN_GROUP_ENTRY_DUMMY_VALUE);
-        verify(redisTemplate).expire(tokenGroupId, timeout, TimeUnit.MINUTES);
+        verify(mockOps).set(tokenGroupId, TOKEN_GROUP_ENTRY_DUMMY_VALUE, timeout, TimeUnit.MINUTES);
     }
 
     @Test

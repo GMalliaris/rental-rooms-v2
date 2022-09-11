@@ -44,7 +44,6 @@ public class RedisConfiguration {
         jedisConnectionFactory.afterPropertiesSet();
 
         redisTemplate.setConnectionFactory(jedisConnectionFactory);
-        redisTemplate.setEnableTransactionSupport(true);
         redisTemplate.afterPropertiesSet();
 
 

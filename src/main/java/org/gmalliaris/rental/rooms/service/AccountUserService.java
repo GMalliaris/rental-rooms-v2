@@ -125,7 +125,7 @@ public class AccountUserService {
     @Transactional(readOnly = true)
     public AccountUserAuthResponse refreshAuthTokens(UUID userId, String authHeader){
 
-        var validClaims = extractValidClaimsFromHeader(authHeader);
+        var validClaims = extractValidClaimsFromHeader(authHeader, JwtType.REFRESH);
         var tokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(validClaims);
         var refreshExpiration = validClaims.getExpiration();
         var user = findAccountUserById(userId);
@@ -171,14 +171,14 @@ public class AccountUserService {
 
     public void logoutUser(String authHeader) {
 
-        var validClaims = extractValidClaimsFromHeader(authHeader);
+        var validClaims = extractValidClaimsFromHeader(authHeader, JwtType.ACCESS);
         var tokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(validClaims);
         jwtService.blacklistTokenGroup(tokenGroupId);
     }
 
-    private static Claims extractValidClaimsFromHeader(String authHeader) {
+    private static Claims extractValidClaimsFromHeader(String authHeader, JwtType type) {
 
-        return JwtUtils.extractValidClaimsFromHeader(authHeader, JwtType.REFRESH)
+        return JwtUtils.extractValidClaimsFromHeader(authHeader, type)
                 .orElseThrow(() -> {
                     var errMsg = "Invalid token, token group id is missing.";
                     throw new IllegalStateException(errMsg);

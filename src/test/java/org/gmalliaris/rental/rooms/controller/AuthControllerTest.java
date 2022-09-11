@@ -226,4 +226,24 @@ class AuthControllerTest {
         verify(securityService).getCurrentUserId();
         verify(accountUserService).resetConfirmationProcess(userId);
     }
+
+    @Test
+    void logoutAccountUserTest_isUnauthorized() throws Exception {
+
+        mockMvc.perform(post("/auth/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value(ApiExceptionMessageConstants.UNAUTHORIZED_MESSAGE));
+    }
+
+    @Test
+    @WithMockUser
+    void logoutAccountUserTest() throws Exception {
+
+        var header = "header";
+        mockMvc.perform(post("/auth/logout")
+                        .header("Authorization", header))
+                .andExpect(status().isNoContent());
+
+        verify(accountUserService).logoutUser(header);
+    }
 }

@@ -55,6 +55,13 @@ public final class RequestUtils {
             var confirmUri = String.format("/auth/confirm/%s", confirmationToken);
             return mockMvc.perform(post(confirmUri));
         }
+
+        public static ResultActions performLogout(MockMvc mockMvc, String accessToken)
+                throws Exception {
+
+            return mockMvc.perform(post("/auth/logout")
+                    .header("Authorization", String.format("Bearer %s", accessToken)));
+        }
     }
 
     public static final class Users{
@@ -66,8 +73,8 @@ public final class RequestUtils {
         public static ResultActions performMe(MockMvc mockMvc, String accessToken)
                 throws Exception {
 
-            return mockMvc.perform(get("/users/me").
-                    header("Authorization", String.format("Bearer %s", accessToken)));
+            return mockMvc.perform(get("/users/me")
+                    .header("Authorization", String.format("Bearer %s", accessToken)));
         }
 
     }

@@ -23,8 +23,8 @@ public class BlacklistService {
 
     public void blacklistTokenGroup(String tokenGroupId) {
         Objects.requireNonNull(tokenGroupId);
-        redisTemplate.opsForValue().set(tokenGroupId, TOKEN_GROUP_ENTRY_DUMMY_VALUE);
-        redisTemplate.expire(tokenGroupId, jwtConfigurationProperties.getRefreshExpirationMinutes(), TimeUnit.MINUTES);
+        redisTemplate.opsForValue().set(tokenGroupId, TOKEN_GROUP_ENTRY_DUMMY_VALUE,
+                jwtConfigurationProperties.getRefreshExpirationMinutes(), TimeUnit.MINUTES);
     }
 
     public boolean tokenWithClaimsIsBlackListed(Claims claims) {

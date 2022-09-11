@@ -524,7 +524,7 @@ class AccountUserServiceTest {
 
             var header = "header";
             accountUserService.logoutUser(header);
-            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromHeader(header, JwtType.REFRESH));
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromHeader(header, JwtType.ACCESS));
             jwtUtils.verify(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims));
             verify(jwtService).blacklistTokenGroup(tgid);
         }
