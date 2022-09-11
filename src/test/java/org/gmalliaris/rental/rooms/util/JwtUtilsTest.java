@@ -1,8 +1,6 @@
 package org.gmalliaris.rental.rooms.util;
 
 import io.jsonwebtoken.*;
-import io.jsonwebtoken.security.Keys;
-import io.jsonwebtoken.security.SignatureException;
 import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -10,468 +8,383 @@ import org.springframework.test.util.ReflectionTestUtils;
 import javax.crypto.SecretKey;
 import java.time.Instant;
 import java.util.Date;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.gmalliaris.rental.rooms.dto.JwtType.ACCESS;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 class JwtUtilsTest {
 
     @Test
-    void extractClaimsTest_malformedToken(){
+    void generateTokenTest() {
 
-        var invalidToken = "invalid";
-        var exception = assertThrows(JwtException.class,
-                () -> JwtUtils.extractClaims(invalidToken));
-        assertEquals(MalformedJwtException.class, exception.getClass());
+        var issued = Date.from(Instant.now());
+        var exp = Date.from(Instant.now().plusSeconds(20));
+        var userId = UUID.randomUUID();
+        var tokenGroupId = UUID.randomUUID().toString();
+
+        var token = JwtUtils.generateToken(issued, exp,
+                JwtType.ACCESS, userId, tokenGroupId);
+
+        var validClaims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+        assertNotNull(validClaims);
+        assertTrue(validClaims.isPresent());
     }
 
     @Test
-    void extractClaimsTest_invalidSignature(){
+    void extractValidClaimsFromHeaderTest_headerIsNull() {
 
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
-        var key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-        var userId = UUID.randomUUID();
-
-        var token = Jwts.builder()
-                .setClaims(Map.of("tgid", UUID.randomUUID().toString()))
-                .setIssuer(iss)
-                .setAudience(iss)
-                .setSubject(userId.toString())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .setId(String.format("%s_%s", ACCESS.getValue(), UUID.randomUUID()))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> JwtUtils.extractClaims(token));
-        assertEquals(SignatureException.class, exception.getClass());
-    }
-
-    @Test
-    void extractClaimsTest_invalidIssuer(){
-
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
-        var key = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-        var userId = UUID.randomUUID();
-
-        var token = Jwts.builder()
-                .setClaims(Map.of("tgid", UUID.randomUUID().toString()))
-                .setIssuer("invalid")
-                .setAudience(iss)
-                .setSubject(userId.toString())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .setId(String.format("%s_%s", ACCESS.getValue(), UUID.randomUUID()))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> JwtUtils.extractClaims(token));
-        assertEquals(IncorrectClaimException.class, exception.getClass());
-    }
-
-    @Test
-    void extractClaimsTest_invalidAudience(){
-
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
-        var key = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
-        var now = Instant.now();
-        var exp = now.plusSeconds(600);
-        var userId = UUID.randomUUID();
-
-        var token = Jwts.builder()
-                .setClaims(Map.of("tgid", UUID.randomUUID().toString()))
-                .setIssuer(iss)
-                .setAudience("invalid")
-                .setSubject(userId.toString())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .setId(String.format("%s_%s", ACCESS.getValue(), UUID.randomUUID()))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> JwtUtils.extractClaims(token));
-        assertEquals(IncorrectClaimException.class, exception.getClass());
-    }
-
-    @Test
-    void extractClaimsTest_expired(){
-
-        var key = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
-        var iss = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
-        var now = Instant.now();
-        var exp = now.minusSeconds(600);
-        var userId = UUID.randomUUID();
-
-        var token = Jwts.builder()
-                .setClaims(Map.of("tgid", UUID.randomUUID().toString()))
-                .setIssuer(iss)
-                .setAudience("invalid")
-                .setSubject(userId.toString())
-                .setIssuedAt(Date.from(now))
-                .setExpiration(Date.from(exp))
-                .setId(String.format("%s_%s", ACCESS.getValue(), UUID.randomUUID()))
-                .signWith(key)
-                .compact();
-
-        var exception = assertThrows(JwtException.class,
-                () -> JwtUtils.extractClaims(token));
-        assertEquals(ExpiredJwtException.class, exception.getClass());
-    }
-
-    @Test
-    void generateTokenAndExtractClaimsTest(){
-        var now = Instant.now();
-        var expiration = now.plusSeconds(120);
-        var type = ACCESS;
-        var userId = UUID.randomUUID();
-
-        var token = JwtUtils.generateToken(Date.from(now), Date.from(expiration),
-                type, userId);
-        assertNotNull(token);
-
-        var claims = JwtUtils.extractClaims(token);
+        var claims = JwtUtils.extractValidClaimsFromHeader(null, JwtType.ACCESS);
         assertNotNull(claims);
-        var body = claims.getBody();
-        assertNotNull(body);
-        assertEquals(String.format("%s_%s", type.getValue(), userId), body.getSubject());
-        var subject = body.getSubject();
-        var subjectComponents = subject.split("_");
-        assertEquals(2, subjectComponents.length);
-        assertEquals(type.getValue(), subjectComponents[0]);
-        assertTrue(CommonUtils.uuidFromString(subjectComponents[1]).isPresent());
-        var tokenGroupId = body.get("tgid", String.class);
-        assertTrue(CommonUtils.uuidFromString(tokenGroupId).isPresent());
+        assertTrue(claims.isEmpty());
     }
 
     @Test
-    void extractUserIdFromTokenTest_nullBody(){
+    void extractValidClaimsFromHeaderTest_headerIsInvalid() {
 
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockJws = mock(Jws.class);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractUserIdFromToken(token, type);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
+        var header = "blah smth";
+        var claims = JwtUtils.extractValidClaimsFromHeader(header, JwtType.ACCESS);
+        assertNotNull(claims);
+        assertTrue(claims.isEmpty());
     }
 
     @Test
-    void extractUserIdFromTokenTest_nullClaimEmail(){
+    void extractValidClaimsFromHeaderTest_tokenIsInvalid() {
 
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
-                    .thenReturn(mock(Claims.class));
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractUserIdFromToken(token, type);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
+        var header = "Bearer invalid";
+        var claims = JwtUtils.extractValidClaimsFromHeader(header, JwtType.ACCESS);
+        assertNotNull(claims);
+        assertTrue(claims.isEmpty());
     }
 
     @Test
-    void extractUserIdFromTokenTest_subjectMalformed(){
+    void extractValidClaimsFromTokenTest_tokenIdIsInvalid() {
 
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        var subject = "blah";
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
+        try(var jwtsUtil = mockStatic(Jwts.class);
+            var commonUtil = mockStatic(CommonUtils.class)) {
+            commonUtil.when(() -> CommonUtils.uuidFromString(nullable(String.class)))
+                    .thenReturn(Optional.empty());
+
             var mockClaims = mock(Claims.class);
-            when(mockClaims.getSubject())
-                    .thenReturn(subject);
-
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
                     .thenReturn(mockClaims);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
 
-            var result = JwtUtils.extractUserIdFromToken(token, type);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isEmpty());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
         }
     }
 
     @Test
-    void extractUserIdFromTokenTest_invalidTokenIdPrefix(){
+    void extractValidClaimsFromTokenTest_tokenGroupIdIsInvalid() {
 
-        var token = "random-token";
-        var type = JwtType.REFRESH;
+        try(var jwtsUtil = mockStatic(Jwts.class);
+            var commonUtil = mockStatic(CommonUtils.class)) {
+            var tokenId = UUID.randomUUID();
+            commonUtil.when(() -> CommonUtils.uuidFromString(nullable(String.class)))
+                    .thenReturn(Optional.of(tokenId), Optional.empty());
+
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getId())
+                    .thenReturn(tokenId.toString());
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
+                    .thenReturn(mockClaims);
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
+
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isEmpty());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
+        }
+    }
+
+    @Test
+    void extractValidClaimsFromTokenTest_userIdIsInvalid_subjectIsNull() {
+
+        try(var jwtsUtil = mockStatic(Jwts.class)) {
+            var tokenId = UUID.randomUUID();
+            var tokenGroupId = UUID.randomUUID();
+
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getId())
+                    .thenReturn(tokenId.toString());
+            when(mockClaims.get("tgid", String.class))
+                    .thenReturn(tokenGroupId.toString());
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
+                    .thenReturn(mockClaims);
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
+
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isEmpty());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
+        }
+    }
+
+    @Test
+    void extractValidClaimsFromTokenTest_userIdIsInvalid_subjectIsInvalid() {
+
+        try(var jwtsUtil = mockStatic(Jwts.class)) {
+            var tokenId = UUID.randomUUID();
+            var tokenGroupId = UUID.randomUUID();
+
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getId())
+                    .thenReturn(tokenId.toString());
+            when(mockClaims.getSubject())
+                    .thenReturn("ref");
+            when(mockClaims.get("tgid", String.class))
+                    .thenReturn(tokenGroupId.toString());
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
+                    .thenReturn(mockClaims);
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
+
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isEmpty());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
+        }
+    }
+
+    @Test
+    void extractValidClaimsFromTokenTest_userIdIsInvalid_subjectIsInvalid_typeIsInvalid() {
+
+        try(var jwtsUtil = mockStatic(Jwts.class)) {
+            var tokenId = UUID.randomUUID();
+            var tokenGroupId = UUID.randomUUID();
+
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getId())
+                    .thenReturn(tokenId.toString());
+            when(mockClaims.getSubject())
+                    .thenReturn("refresh_" + UUID.randomUUID());
+            when(mockClaims.get("tgid", String.class))
+                    .thenReturn(tokenGroupId.toString());
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
+                    .thenReturn(mockClaims);
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
+
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isEmpty());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
+        }
+    }
+
+    @Test
+    void extractValidClaimsFromTokenTest_userIdIsInvalid_subjectIsInvalid_userIdIsInvalid() {
+
+        try(var jwtsUtil = mockStatic(Jwts.class);
+            var commonUtil = mockStatic(CommonUtils.class)) {
+            var tokenId = UUID.randomUUID();
+            var tokenGroupId = UUID.randomUUID();
+            commonUtil.when(() -> CommonUtils.uuidFromString(nullable(String.class)))
+                    .thenReturn(Optional.of(tokenId), Optional.of(tokenGroupId), Optional.empty());
+
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getId())
+                    .thenReturn(tokenId.toString());
+            when(mockClaims.getSubject())
+                    .thenReturn("access_blah");
+            when(mockClaims.get("tgid", String.class))
+                    .thenReturn(tokenGroupId.toString());
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
+                    .thenReturn(mockClaims);
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
+
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isEmpty());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
+        }
+    }
+
+    @Test
+    void extractValidClaimsFromTokenTest() {
+
+        try(var jwtsUtil = mockStatic(Jwts.class)) {
+            var tokenId = UUID.randomUUID();
+            var tokenGroupId = UUID.randomUUID();
+
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getId())
+                    .thenReturn(tokenId.toString());
+            when(mockClaims.getSubject())
+                    .thenReturn("access_" + UUID.randomUUID());
+            when(mockClaims.get("tgid", String.class))
+                    .thenReturn(tokenGroupId.toString());
+            var jwsClaims = mock(Jws.class);
+            when(jwsClaims.getBody())
+                    .thenReturn(mockClaims);
+            var mockParser = mock(JwtParser.class);
+            when(mockParser.parseClaimsJws(anyString()))
+                    .thenReturn(jwsClaims);
+            var mockParserBuilder = mock(JwtParserBuilder.class);
+            when(mockParserBuilder.requireIssuer(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.requireAudience(anyString()))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.setSigningKey(any(SecretKey.class)))
+                    .thenReturn(mockParserBuilder);
+            when(mockParserBuilder.build())
+                    .thenReturn(mockParser);
+            jwtsUtil.when(Jwts::parserBuilder)
+                    .thenReturn(mockParserBuilder);
+
+            var token = "token";
+            var claims = JwtUtils.extractValidClaimsFromToken(token, JwtType.ACCESS);
+            assertNotNull(claims);
+            assertTrue(claims.isPresent());
+            var issAud = (String) ReflectionTestUtils.getField(JwtUtils.class, "ISS_AUD");
+            verify(mockParserBuilder).requireIssuer(issAud);
+            verify(mockParserBuilder).requireAudience(issAud);
+            var signKey = (SecretKey) ReflectionTestUtils.getField(JwtUtils.class, "SIGN_KEY");
+            verify(mockParserBuilder).setSigningKey(signKey);
+            verify(mockParser).parseClaimsJws(token);
+        }
+    }
+
+    @Test
+    void extractUserIdFromValidClaimsTest() {
+
+        var tokenId = UUID.randomUUID();
+        var tokenGroupId = UUID.randomUUID();
         var userId = UUID.randomUUID();
-        var subject = String.format("%s_%s", ACCESS.getValue(), userId);
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockClaims = mock(Claims.class);
-            when(mockClaims.getSubject())
-                    .thenReturn(subject);
 
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
-                    .thenReturn(mockClaims);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
+        var mockClaims = mock(Claims.class);
+        when(mockClaims.getId())
+                .thenReturn(tokenId.toString());
+        when(mockClaims.getSubject())
+                .thenReturn("access_" + userId);
+        when(mockClaims.get("tgid", String.class))
+                .thenReturn(tokenGroupId.toString());
 
-            var result = JwtUtils.extractUserIdFromToken(token, type);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
-    }
-
-    @Test
-    void extractUserIdFromTokenTest_invalidTokenId(){
-
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        var subject = "blah";
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockClaims = mock(Claims.class);
-            when(mockClaims.getSubject())
-                    .thenReturn(subject);
-
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
-                    .thenReturn(mockClaims);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractUserIdFromToken(token, type);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
-    }
-
-    @Test
-    void extractUserIdFromTokenTest(){
-
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        var userId = UUID.randomUUID();
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockClaims = mock(Claims.class);
-            when(mockClaims.getSubject())
-                    .thenReturn(String.format("%s_%s", type.getValue(), userId));
-
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
-                    .thenReturn(mockClaims);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractUserIdFromToken(token, type);
-            assertNotNull(result);
-            assertTrue(result.isPresent());
-            assertEquals(userId, result.get());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
-    }
-
-    @Test
-    void extractUserIdFromHeaderTest_nullHeader(){
-        var result = JwtUtils.extractUserIdFromHeader(null, ACCESS);
+        var result = JwtUtils.extractUserIdFromValidClaims(mockClaims, JwtType.ACCESS);
         assertNotNull(result);
-        assertTrue(result.isEmpty());
+        assertEquals(userId, result);
     }
 
-    @Test
-    void extractUserIdFromHeaderTest_invalidHeader(){
-        var invalidHeader = "Bearer- test";
-        var result = JwtUtils.extractUserIdFromHeader(invalidHeader, ACCESS);
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void extractUserIdFromHeaderTest_throwsJwtException(){
-        var invalidHeader = "Bearer test";
-
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenThrow(JwtException.class);
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromHeader(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractUserIdFromHeader(invalidHeader, ACCESS);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractUserIdFromToken("test", ACCESS));
-        }
-    }
-
-    @Test
-    void extractUserIdFromHeaderTest(){
-        var invalidHeader = "Bearer test";
-        var userId = UUID.randomUUID();
-
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromToken(anyString(), any(JwtType.class)))
-                    .thenReturn(Optional.of(userId));
-            jwtUtils.when(() -> JwtUtils.extractUserIdFromHeader(anyString(), any(JwtType.class)))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractUserIdFromHeader(invalidHeader, ACCESS);
-            assertNotNull(result);
-            assertTrue(result.isPresent());
-            assertEquals(userId, result.get());
-            jwtUtils.verify(() -> JwtUtils.extractUserIdFromToken("test", ACCESS));
-        }
-    }
-
-    @Test
-    void extractExpirationFromTokenTest_nullBody(){
-
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockJws = mock(Jws.class);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractExpirationFromToken(token);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
-    }
-
-    @Test
-    void extractExpirationFromTokenTest_nullClaimEmail(){
-
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
-                    .thenReturn(mock(Claims.class));
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractExpirationFromToken(token);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
-    }
-
-    @Test
-    void extractExpirationFromTokenTest(){
-
-        var token = "random-token";
-        var type = JwtType.REFRESH;
-        var now = Date.from(Instant.now());
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-            var mockClaims = mock(Claims.class);
-            when(mockClaims.getExpiration())
-                    .thenReturn(now);
-
-            var mockJws = mock(Jws.class);
-            when(mockJws.getBody())
-                    .thenReturn(mockClaims);
-            jwtUtils.when(() -> JwtUtils.extractClaims(anyString()))
-                    .thenReturn(mockJws);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractExpirationFromToken(token);
-            assertNotNull(result);
-            assertTrue(result.isPresent());
-            assertEquals(now, result.get());
-            jwtUtils.verify(() -> JwtUtils.extractClaims(token));
-        }
-    }
-
-    @Test
-    void extractExpirationFromHeaderTest_nullHeader(){
-        var result = JwtUtils.extractExpirationFromHeader(null);
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void extractExpirationFromHeaderTest_invalidHeader(){
-        var invalidHeader = "Bearer- test";
-        var result = JwtUtils.extractExpirationFromHeader(invalidHeader);
-        assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-
-    @Test
-    void extractExpirationFromHeaderTest_throwsJwtException(){
-        var invalidHeader = "Bearer test";
-
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
-                    .thenThrow(JwtException.class);
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractExpirationFromHeader(invalidHeader);
-            assertNotNull(result);
-            assertTrue(result.isEmpty());
-            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test"));
-        }
-    }
-
-    @Test
-    void extractExpirationFromHeaderTest(){
-        var invalidHeader = "Bearer test";
-        var now = Date.from(Instant.now());
-
-        try (var jwtUtils = mockStatic(JwtUtils.class)){
-
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromToken(anyString()))
-                    .thenReturn(Optional.of(now));
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
-                    .thenCallRealMethod();
-
-            var result = JwtUtils.extractExpirationFromHeader(invalidHeader);
-            assertNotNull(result);
-            assertTrue(result.isPresent());
-            assertEquals(now, result.get());
-            jwtUtils.verify(() -> JwtUtils.extractExpirationFromToken("test"));
-        }
-    }
 }

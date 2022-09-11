@@ -14,12 +14,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -30,6 +28,8 @@ class JwtServiceTest {
 
     @Mock
     private JwtConfigurationProperties jwtConfigurationProperties;
+    @Mock
+    private BlacklistService blacklistService;
 
     @Test
     void generateAccessTokenTest() {
@@ -43,10 +43,10 @@ class JwtServiceTest {
 
         try (var jwtUtils = mockStatic(JwtUtils.class)) {
             jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class),
-                            any(Date.class), any(JwtType.class), any(UUID.class)))
+                            any(Date.class), any(JwtType.class), any(UUID.class), anyString()))
                     .thenReturn("generatedToken");
 
-            var token = jwtService.generateAccessToken(accountUser);
+            var token = jwtService.generateAccessToken(accountUser, UUID.randomUUID().toString());
             assertNotNull(token);
             assertEquals("generatedToken", token);
 
@@ -55,7 +55,7 @@ class JwtServiceTest {
             var uuidCapturer = ArgumentCaptor.forClass(UUID.class);
             jwtUtils.verify(() -> JwtUtils.generateToken(
                     dateCapturer.capture(), dateCapturer.capture(),
-                    typeCapturer.capture(), uuidCapturer.capture()));
+                    typeCapturer.capture(), uuidCapturer.capture(), anyString()));
             var dates = dateCapturer.getAllValues();
             var issuedAt = dates.get(0);
             var expiration = dates.get(1);
@@ -82,87 +82,73 @@ class JwtServiceTest {
 
         try (var jwtUtils = mockStatic(JwtUtils.class)) {
             jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class),
-                            any(Date.class), any(JwtType.class), any(UUID.class)))
+                            any(Date.class), any(JwtType.class),
+                            any(UUID.class), anyString()))
                     .thenReturn("generatedToken");
 
-            var token = jwtService.generateRefreshToken(accountUser);
+            var tgid = UUID.randomUUID();
+            var token = jwtService.generateRefreshToken(accountUser, tgid.toString());
             assertNotNull(token);
             assertEquals("generatedToken", token);
 
             var dateCapturer = ArgumentCaptor.forClass(Date.class);
             var typeCapturer = ArgumentCaptor.forClass(JwtType.class);
             var uuidCapturer = ArgumentCaptor.forClass(UUID.class);
+            var tgidCapturer = ArgumentCaptor.forClass(String.class);
             jwtUtils.verify(() -> JwtUtils.generateToken(
                     dateCapturer.capture(), dateCapturer.capture(),
-                    typeCapturer.capture(), uuidCapturer.capture()));
+                    typeCapturer.capture(), uuidCapturer.capture(),
+                    tgidCapturer.capture()));
             var dates = dateCapturer.getAllValues();
             var issuedAt = dates.get(0);
             var expiration = dates.get(1);
             var type = typeCapturer.getValue();
             var uuid = uuidCapturer.getValue();
+            var tgidCaptured = tgidCapturer.getValue();
             assertNotNull(issuedAt);
             assertNotNull(expiration);
             var diff = ChronoUnit.MINUTES.between(issuedAt.toInstant(), expiration.toInstant());
             assertEquals(refreshTokenDuration, diff);
             assertEquals(accountUser.getId(), uuid);
+            assertEquals(tgid.toString(), tgidCaptured);
             assertEquals(JwtType.REFRESH, type);
         }
     }
 
     @Test
-    void generateNewRefreshTokenTest_throws(){
+    void generateRefreshTokenIfNeededTest_notNeeded() {
 
-        var authHeader = "header";
-        var exception = assertThrows(IllegalStateException.class,
-                () -> jwtService.generateNewRefreshToken(mock(AccountUser.class), authHeader));
-        var errMsg = "Invalid token, expiration is missing.";
-        assertEquals(errMsg, exception.getMessage());
+        var now = Instant.now();
+        var expInstant = now.plusSeconds(60);
+
+        when(jwtConfigurationProperties.getRefreshExpirationThresholdSeconds())
+                .thenReturn(6);
+
+        var result = jwtService.generateRefreshTokenIfNeeded(mock(AccountUser.class),
+                Date.from(expInstant), UUID.randomUUID().toString());
+        assertTrue(result.isEmpty());
+        verifyNoInteractions(blacklistService);
     }
 
     @Test
-    void generateNewRefreshTokenTest_needsRefresh(){
+    void generateRefreshTokenIfNeededTest_needed() {
 
-        var authHeader = "header";
+        var now = Instant.now();
+        var expInstant = now.plusSeconds(6);
+
+        when(jwtConfigurationProperties.getRefreshExpirationThresholdSeconds())
+                .thenReturn(60);
+
         when(jwtConfigurationProperties.getRefreshExpirationMinutes())
-                .thenReturn(Integer.MAX_VALUE);
+                .thenReturn(60);
 
-        try(var jwtUtils = mockStatic(JwtUtils.class)){
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
-                    .thenAnswer( a -> {
-                       var exp = Date.from(Instant.now());
-                       return Optional.of(exp);
-                    });
-            jwtUtils.when(() -> JwtUtils.generateToken(any(Date.class), any(Date.class),
-                    any(JwtType.class), any(UUID.class)))
-                    .thenReturn("refreshToken");
-
-            var user = mock(AccountUser.class);
-            var userId = UUID.randomUUID();
-            when(user.getId()).thenReturn(userId);
-            var result = jwtService.generateNewRefreshToken(user, authHeader);
-            assertNotNull(result);
-            assertEquals("refreshToken", result);
-        }
+        var user = new AccountUser();
+        user.setId(UUID.randomUUID());
+        var tokenGroup = UUID.randomUUID().toString();
+        var result = jwtService.generateRefreshTokenIfNeeded(user,
+                Date.from(expInstant), tokenGroup);
+        assertFalse(result.isEmpty());
+        verify(blacklistService).blacklistTokenGroup(tokenGroup);
     }
 
-    @Test
-    void generateNewRefreshTokenTest_notNeedRefresh(){
-
-        var authHeader = "header";
-        when(jwtConfigurationProperties.getRefreshExpirationMinutes())
-                .thenReturn(Integer.MIN_VALUE);
-
-        try(var jwtUtils = mockStatic(JwtUtils.class)){
-            jwtUtils.when(() -> JwtUtils.extractExpirationFromHeader(anyString()))
-                    .thenAnswer( a -> {
-                        var exp = Date.from(Instant.now());
-                        return Optional.of(exp);
-                    });
-
-            var result = jwtService.generateNewRefreshToken(mock(AccountUser.class), authHeader);
-            assertNull(result);
-            jwtUtils.verify(() -> JwtUtils.generateToken(any(Date.class), any(Date.class),
-                            any(JwtType.class), any(UUID.class)), never());
-        }
-    }
 }

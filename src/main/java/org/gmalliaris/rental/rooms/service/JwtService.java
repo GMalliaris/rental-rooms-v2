@@ -10,25 +10,37 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class JwtService {
 
     private final JwtConfigurationProperties jwtConfigurationProperties;
+    private final BlacklistService blacklistService;
 
-    public JwtService(JwtConfigurationProperties jwtConfigurationProperties) {
+    public JwtService(JwtConfigurationProperties jwtConfigurationProperties, BlacklistService blacklistService) {
         this.jwtConfigurationProperties = jwtConfigurationProperties;
+        this.blacklistService = blacklistService;
     }
 
-    public String generateAccessToken(AccountUser user){
-        return generateToken(user, JwtType.ACCESS);
+    public String generateAccessToken(AccountUser user, String tokenGroupId){
+        return generateToken(user, JwtType.ACCESS, tokenGroupId);
     }
 
-    public String generateRefreshToken(AccountUser user){
-        return generateToken(user, JwtType.REFRESH);
+//    public String generateAccessToken(AccountUser user){
+//        return generateAccessToken(user, UUID.randomUUID().toString());
+//    }
+//
+//    public String generateRefreshToken(AccountUser user){
+//        return generateRefreshToken(user, UUID.randomUUID().toString());
+//    }
+
+    public String generateRefreshToken(AccountUser user, String tokenGroupId){
+        return generateToken(user, JwtType.REFRESH, tokenGroupId);
     }
 
-    private String generateToken(AccountUser user, JwtType type){
+    private String generateToken(AccountUser user, JwtType type, String tokenGroupId){
 
         Objects.requireNonNull(user);
         Objects.requireNonNull(user.getId());
@@ -44,24 +56,22 @@ public class JwtService {
         }
 
         return JwtUtils.generateToken(Date.from(created), Date.from(expiration),
-                type, user.getId());
+                type, user.getId(), tokenGroupId);
     }
 
-    public String generateNewRefreshToken(AccountUser user, String authHeader){
+    public Optional<String> generateRefreshTokenIfNeeded(AccountUser user, Date expiration, String tokenGroupId ){
 
-        var expiration = JwtUtils.extractExpirationFromHeader(authHeader)
-                .orElseThrow(() -> {
-                    var errMsg = "Invalid token, expiration is missing.";
-                    throw new IllegalStateException(errMsg);
-                });
+        var nowInstant = Instant.now();
+        var expirationInstant = expiration.toInstant();
 
-        var now = Instant.now();
+        var expiresInSeconds = ChronoUnit.SECONDS.between(nowInstant, expirationInstant);
+        var refreshExpirationThresholdSeconds = jwtConfigurationProperties.getRefreshExpirationThresholdSeconds();
 
-        var delay = 60;
-        var diff = ChronoUnit.SECONDS.between(now, expiration.toInstant());
-        if (diff + delay < jwtConfigurationProperties.getRefreshExpirationMinutes()){
-            return generateToken(user, JwtType.REFRESH);
+        if (expiresInSeconds > refreshExpirationThresholdSeconds) {
+            return Optional.empty();
         }
-        return null;
+
+        blacklistService.blacklistTokenGroup(tokenGroupId);
+        return Optional.of(generateRefreshToken(user, UUID.randomUUID().toString()));
     }
 }

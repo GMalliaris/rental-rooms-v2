@@ -4,11 +4,13 @@ import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
+import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.entity.ConfirmationToken;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
+import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.mail.MessagingException;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -101,8 +104,9 @@ public class AccountUserService {
             throw new ApiException(HttpStatus.UNAUTHORIZED, ApiExceptionMessageConstants.INVALID_CREDENTIALS);
         }
 
-        var accessToken = jwtService.generateAccessToken(user);
-        var refreshToken = jwtService.generateRefreshToken(user);
+        var randomTokenGroupId = UUID.randomUUID();
+        var accessToken = jwtService.generateAccessToken(user, randomTokenGroupId.toString());
+        var refreshToken = jwtService.generateRefreshToken(user, randomTokenGroupId.toString());
         return new AccountUserAuthResponse(accessToken, refreshToken);
     }
 
@@ -121,11 +125,32 @@ public class AccountUserService {
     @Transactional(readOnly = true)
     public AccountUserAuthResponse refreshAuthTokens(UUID userId, String authHeader){
 
+        var errMsg = "Invalid token, token group id is missing.";
+        var tokenGroupMissingException = new IllegalStateException(errMsg);
+
+        var validClaims = JwtUtils.extractValidClaimsFromHeader(authHeader, JwtType.REFRESH)
+                .orElseThrow(() -> {
+                    throw tokenGroupMissingException;
+                });
+        var tokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(validClaims);
+        var refreshExpiration = validClaims.getExpiration();
         var user = findAccountUserById(userId);
 
-        var accessToken = jwtService.generateAccessToken(user);
-        var refreshToken = jwtService.generateNewRefreshToken(user, authHeader);
-        return new AccountUserAuthResponse(accessToken, refreshToken);
+        var newRefreshTokenOptional = jwtService.generateRefreshTokenIfNeeded(user, refreshExpiration, tokenGroupId);
+
+        if (newRefreshTokenOptional.isEmpty()) { // no refresh token generated
+            var accessToken = jwtService.generateAccessToken(user, tokenGroupId);
+            return new AccountUserAuthResponse(accessToken, null);
+        }
+
+        var newRefreshToken = newRefreshTokenOptional.get();
+        var newTokenGroupId = JwtUtils.extractValidClaimsFromToken(newRefreshToken, JwtType.REFRESH)
+                .map(JwtUtils::extractTokenGroupIdFromClaims)
+                .orElseThrow(() -> {
+                    throw tokenGroupMissingException;
+                });
+        var accessToken = jwtService.generateAccessToken(user, newTokenGroupId);
+        return new AccountUserAuthResponse(accessToken, newRefreshToken);
     }
 
     @Transactional

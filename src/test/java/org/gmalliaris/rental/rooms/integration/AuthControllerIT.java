@@ -5,9 +5,11 @@ import com.jayway.jsonpath.JsonPath;
 import org.gmalliaris.rental.rooms.*;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
+import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
+import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +25,7 @@ import java.util.List;
 
 import static org.gmalliaris.rental.rooms.RequestUtils.Auth.*;
 import static org.gmalliaris.rental.rooms.RequestUtils.Users.performMe;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -108,6 +109,41 @@ class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer, R
                 .andExpect(jsonPath("$.roles.length()").value(2))
                 .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_HOST.toString())))
                 .andExpect(jsonPath("$.roles", Matchers.hasItem(UserRoleName.ROLE_GUEST.toString())));
+    }
+
+    @Test
+    void userRegistersAndCanLogin_validateTokenGroupId() throws Exception {
+        var email = "testUser@example.eg";
+        var password = "12345678aA!";
+        var firstName = "first-name";
+        var lastName = "last-name";
+        var phoneNumber = "+30 6988888888";
+        var rolesList = List.of(UserRoleName.ROLE_HOST, UserRoleName.ROLE_GUEST);
+
+        var registerRequest = new CreateUserRequest(password, email, firstName, lastName, phoneNumber, rolesList);
+        performRegister(mockMvc, objectMapper.writeValueAsString(registerRequest))
+                .andExpect(status().isCreated());
+
+        var loginRequest = new LoginRequest(email, password);
+
+        var result = performLogin(mockMvc, objectMapper.writeValueAsString(loginRequest))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var accessToken = (String) JsonPath.read(result.getResponse().getContentAsString(), "$.accessToken");
+        var accClaims = JwtUtils.extractValidClaimsFromToken(accessToken, JwtType.ACCESS);
+        assertNotNull(accClaims);
+        assertTrue(accClaims.isPresent());
+        var accTokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(accClaims.get());
+        var refreshToken = (String) JsonPath.read(result.getResponse().getContentAsString(), "$.refreshToken");
+        var refClaims = JwtUtils.extractValidClaimsFromToken(refreshToken, JwtType.REFRESH);
+        assertNotNull(refClaims);
+        assertTrue(refClaims.isPresent());
+        var refTokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(refClaims.get());
+        assertEquals(accTokenGroupId, refTokenGroupId);
+        assertNotNull(accessToken);
+        assertNotNull(refreshToken);
+
     }
 
     @Test

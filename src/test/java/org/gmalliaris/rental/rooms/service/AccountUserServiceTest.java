@@ -1,14 +1,17 @@
 package org.gmalliaris.rental.rooms.service;
 
+import io.jsonwebtoken.Claims;
 import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
+import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.entity.AccountUser;
 import org.gmalliaris.rental.rooms.entity.ConfirmationToken;
 import org.gmalliaris.rental.rooms.entity.UserRole;
 import org.gmalliaris.rental.rooms.entity.UserRoleName;
 import org.gmalliaris.rental.rooms.repository.AccountUserRepository;
+import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -19,6 +22,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import javax.mail.MessagingException;
+import java.sql.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -243,9 +247,9 @@ class AccountUserServiceTest {
         when(bCryptPasswordEncoder.matches(anyString(), anyString()))
                 .thenReturn(true);
 
-        when(jwtService.generateAccessToken(any(AccountUser.class)))
+        when(jwtService.generateAccessToken(any(AccountUser.class), any(String.class)))
                 .thenReturn("access");
-        when(jwtService.generateRefreshToken(any(AccountUser.class)))
+        when(jwtService.generateRefreshToken(any(AccountUser.class), any(String.class)))
                 .thenReturn("refresh");
 
         var loginRequest = new LoginRequest("test@example.eg", "12345678");
@@ -257,6 +261,12 @@ class AccountUserServiceTest {
 
         verify(accountUserRepository).findByEmail(loginRequest.getUsername());
         verify(bCryptPasswordEncoder).matches(loginRequest.getPassword(), mockUser.getPassword());
+        var tgidCaptor = ArgumentCaptor.forClass(String.class);
+        verify(jwtService).generateAccessToken(eq(mockUser), tgidCaptor.capture());
+        verify(jwtService).generateRefreshToken(eq(mockUser), tgidCaptor.capture());
+        var tgids = tgidCaptor.getAllValues();
+        assertEquals(2, tgids.size());
+        assertEquals(tgids.get(0), tgids.get(1));
     }
 
     @Test
@@ -289,29 +299,137 @@ class AccountUserServiceTest {
     }
 
     @Test
-    void refreshAuthTokensTest(){
-        var randomId = UUID.randomUUID();
-        var header = "Header";
+    void refreshAuthTokensTest_invalidClaims(){
+        var header = "invalidHeader";
 
+        var exception = assertThrows(IllegalStateException.class,
+                () -> accountUserService.refreshAuthTokens(UUID.randomUUID(), header));
+        assertEquals("Invalid token, token group id is missing.", exception.getMessage());
+    }
+
+    @Test
+    void refreshAuthTokensTest_noRefreshTokenGenerated(){
+        var header = "header";
+        var userId = UUID.randomUUID();
         var user = mock(AccountUser.class);
-        when(accountUserRepository.findById(any(UUID.class)))
-                .thenReturn(Optional.of(user));
+        var tokenGroupId = UUID.randomUUID().toString();
+        var exp = mock(Date.class);
+        var accessToken = "access";
 
-        var access = "access";
-        var refresh = "refresh";
-        when(jwtService.generateAccessToken(any(AccountUser.class)))
-                .thenReturn(access);
-        when(jwtService.generateNewRefreshToken(any(AccountUser.class), anyString()))
-                .thenReturn(refresh);
+        try(var jwtUtils = mockStatic(JwtUtils.class)) {
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getExpiration())
+                    .thenReturn(exp);
+            jwtUtils.when(() -> JwtUtils.extractValidClaimsFromHeader(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.of(mockClaims));
+            jwtUtils.when(() -> JwtUtils.extractTokenGroupIdFromClaims(any(Claims.class)))
+                    .thenReturn(tokenGroupId);
+            when(accountUserRepository.findById(any(UUID.class)))
+                    .thenReturn(Optional.of(user));
+            when(jwtService.generateRefreshTokenIfNeeded(any(AccountUser.class), any(Date.class),
+                    anyString()))
+                    .thenReturn(Optional.empty());
+            when(jwtService.generateAccessToken(any(AccountUser.class), anyString()))
+                    .thenReturn(accessToken);
 
-        var result = accountUserService.refreshAuthTokens(randomId, header);
-        assertNotNull(result);
-        assertEquals(access, result.getAccessToken());
-        assertEquals(refresh, result.getRefreshToken());
+            var result = accountUserService.refreshAuthTokens(userId, header);
+            assertNotNull(result);
+            assertEquals(accessToken, result.getAccessToken());
+            assertNull(result.getRefreshToken());
 
-        verify(accountUserRepository).findById(randomId);
-        verify(jwtService).generateAccessToken(user);
-        verify(jwtService).generateNewRefreshToken(user, header);
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromHeader(header, JwtType.REFRESH));
+            jwtUtils.verify(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims));
+            verify(accountUserRepository).findById(userId);
+            verify(jwtService).generateRefreshTokenIfNeeded(user, exp, tokenGroupId);
+            verify(jwtService).generateAccessToken(user, tokenGroupId);
+        }
+    }
+
+    @Test
+    void refreshAuthTokensTest_refreshTokenGenerated(){
+        var header = "header";
+        var userId = UUID.randomUUID();
+        var user = mock(AccountUser.class);
+        var tokenGroupId = UUID.randomUUID().toString();
+        var newTokenGroupId = UUID.randomUUID().toString();
+        var exp = mock(Date.class);
+        var accessToken = "access";
+        var refreshToken = "refreshToken";
+
+        try(var jwtUtils = mockStatic(JwtUtils.class)) {
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getExpiration())
+                    .thenReturn(exp);
+            jwtUtils.when(() -> JwtUtils.extractValidClaimsFromHeader(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.of(mockClaims));
+            jwtUtils.when(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims))
+                    .thenReturn(tokenGroupId);
+            when(accountUserRepository.findById(any(UUID.class)))
+                    .thenReturn(Optional.of(user));
+            when(jwtService.generateRefreshTokenIfNeeded(any(AccountUser.class), any(Date.class),
+                    anyString()))
+                    .thenReturn(Optional.of(refreshToken));
+
+            var refreshClaims = mock(Claims.class);
+            jwtUtils.when(() -> JwtUtils.extractValidClaimsFromToken(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.of(refreshClaims));
+            jwtUtils.when(() -> JwtUtils.extractTokenGroupIdFromClaims(refreshClaims))
+                    .thenReturn(newTokenGroupId);
+
+            when(jwtService.generateAccessToken(any(AccountUser.class), anyString()))
+                    .thenReturn(accessToken);
+
+            var result = accountUserService.refreshAuthTokens(userId, header);
+            assertNotNull(result);
+            assertEquals(accessToken, result.getAccessToken());
+            assertEquals(refreshToken, result.getRefreshToken());
+
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromHeader(header, JwtType.REFRESH));
+            jwtUtils.verify(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims));
+            verify(accountUserRepository).findById(userId);
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromToken(refreshToken, JwtType.REFRESH));
+            jwtUtils.verify(() -> JwtUtils.extractTokenGroupIdFromClaims(refreshClaims));
+            verify(jwtService).generateRefreshTokenIfNeeded(user, exp, tokenGroupId);
+            verify(jwtService).generateAccessToken(user, newTokenGroupId);
+        }
+    }
+
+    @Test
+    void refreshAuthTokensTest_invalidRefreshTokenGenerated(){
+        var header = "header";
+        var userId = UUID.randomUUID();
+        var user = mock(AccountUser.class);
+        var tokenGroupId = UUID.randomUUID().toString();
+        var exp = mock(Date.class);
+        var accessToken = "access";
+        var refreshToken = "refreshToken";
+
+        try(var jwtUtils = mockStatic(JwtUtils.class)) {
+            var mockClaims = mock(Claims.class);
+            when(mockClaims.getExpiration())
+                    .thenReturn(exp);
+            jwtUtils.when(() -> JwtUtils.extractValidClaimsFromHeader(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.of(mockClaims));
+            jwtUtils.when(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims))
+                    .thenReturn(tokenGroupId);
+            when(accountUserRepository.findById(any(UUID.class)))
+                    .thenReturn(Optional.of(user));
+            when(jwtService.generateRefreshTokenIfNeeded(any(AccountUser.class), any(Date.class),
+                    anyString()))
+                    .thenReturn(Optional.of(refreshToken));
+
+            jwtUtils.when(() -> JwtUtils.extractValidClaimsFromToken(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.empty());
+
+            var exception = assertThrows(IllegalStateException.class,
+                    () -> accountUserService.refreshAuthTokens(userId, header));
+            assertEquals("Invalid token, token group id is missing.", exception.getMessage());
+
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromHeader(header, JwtType.REFRESH));
+            jwtUtils.verify(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims));
+            verify(accountUserRepository).findById(userId);
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromToken(refreshToken, JwtType.REFRESH));
+        }
     }
 
     @Test
