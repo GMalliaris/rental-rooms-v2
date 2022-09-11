@@ -1,5 +1,6 @@
 package org.gmalliaris.rental.rooms.service;
 
+import io.jsonwebtoken.Claims;
 import org.gmalliaris.rental.rooms.config.exception.ApiException;
 import org.gmalliaris.rental.rooms.config.exception.ApiExceptionMessageConstants;
 import org.gmalliaris.rental.rooms.dto.AccountUserAuthResponse;
@@ -19,7 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.mail.MessagingException;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -125,13 +125,7 @@ public class AccountUserService {
     @Transactional(readOnly = true)
     public AccountUserAuthResponse refreshAuthTokens(UUID userId, String authHeader){
 
-        var errMsg = "Invalid token, token group id is missing.";
-        var tokenGroupMissingException = new IllegalStateException(errMsg);
-
-        var validClaims = JwtUtils.extractValidClaimsFromHeader(authHeader, JwtType.REFRESH)
-                .orElseThrow(() -> {
-                    throw tokenGroupMissingException;
-                });
+        var validClaims = extractValidClaimsFromHeader(authHeader);
         var tokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(validClaims);
         var refreshExpiration = validClaims.getExpiration();
         var user = findAccountUserById(userId);
@@ -147,7 +141,8 @@ public class AccountUserService {
         var newTokenGroupId = JwtUtils.extractValidClaimsFromToken(newRefreshToken, JwtType.REFRESH)
                 .map(JwtUtils::extractTokenGroupIdFromClaims)
                 .orElseThrow(() -> {
-                    throw tokenGroupMissingException;
+                    var errMsg = "Invalid token, token group id is missing.";
+                    throw new IllegalStateException(errMsg);
                 });
         var accessToken = jwtService.generateAccessToken(user, newTokenGroupId);
         return new AccountUserAuthResponse(accessToken, newRefreshToken);
@@ -172,5 +167,21 @@ public class AccountUserService {
             throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
                     String.format(ApiExceptionMessageConstants.FAILED_EMAIL, "Registration Confirmation"));
         }
+    }
+
+    public void logoutUser(String authHeader) {
+
+        var validClaims = extractValidClaimsFromHeader(authHeader);
+        var tokenGroupId = JwtUtils.extractTokenGroupIdFromClaims(validClaims);
+        jwtService.blacklistTokenGroup(tokenGroupId);
+    }
+
+    private static Claims extractValidClaimsFromHeader(String authHeader) {
+
+        return JwtUtils.extractValidClaimsFromHeader(authHeader, JwtType.REFRESH)
+                .orElseThrow(() -> {
+                    var errMsg = "Invalid token, token group id is missing.";
+                    throw new IllegalStateException(errMsg);
+                });
     }
 }

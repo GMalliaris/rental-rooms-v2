@@ -28,14 +28,6 @@ public class JwtService {
         return generateToken(user, JwtType.ACCESS, tokenGroupId);
     }
 
-//    public String generateAccessToken(AccountUser user){
-//        return generateAccessToken(user, UUID.randomUUID().toString());
-//    }
-//
-//    public String generateRefreshToken(AccountUser user){
-//        return generateRefreshToken(user, UUID.randomUUID().toString());
-//    }
-
     public String generateRefreshToken(AccountUser user, String tokenGroupId){
         return generateToken(user, JwtType.REFRESH, tokenGroupId);
     }
@@ -73,5 +65,9 @@ public class JwtService {
 
         blacklistService.blacklistTokenGroup(tokenGroupId);
         return Optional.of(generateRefreshToken(user, UUID.randomUUID().toString()));
+    }
+
+    public void blacklistTokenGroup(String tokenGroupId) {
+        blacklistService.blacklistTokenGroup(tokenGroupId);
     }
 }

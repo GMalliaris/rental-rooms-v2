@@ -151,4 +151,12 @@ class JwtServiceTest {
         verify(blacklistService).blacklistTokenGroup(tokenGroup);
     }
 
+    @Test
+    void blacklistTokenGroup() {
+
+        var tokenGroupId = UUID.randomUUID();
+        jwtService.blacklistTokenGroup(tokenGroupId.toString());
+
+        verify(blacklistService).blacklistTokenGroup(tokenGroupId.toString());
+    }
 }

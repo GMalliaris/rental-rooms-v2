@@ -13,6 +13,7 @@ import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.gmalliaris.rental.rooms.service.SecurityService;
+import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -64,6 +65,22 @@ public class AuthController {
     })
     public AccountUserAuthResponse loginAccountUser(@RequestBody @Valid LoginRequest loginRequest){
         return accountUserService.login(loginRequest);
+    }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Transactional(readOnly = true)
+    @Operation(summary = "Logout user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204",
+                    description = "User logged in",
+                    content = { @Content(schema = @Schema )}),
+            @ApiResponse(responseCode = "401",
+                    description = "Invalid user credentials",
+                    content = { @Content(schema = @Schema(implementation = ExceptionResponse.class)) })
+    })
+    public void logoutAccountUser(@Schema(hidden = true) @RequestHeader("Authorization") String authorizationHeader){
+        accountUserService.logoutUser(authorizationHeader);
     }
 
     @GetMapping("/refresh")

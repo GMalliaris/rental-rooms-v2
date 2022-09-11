@@ -510,4 +510,23 @@ class AccountUserServiceTest {
         verify(tokenService).replaceConfirmationTokenForUser(user);
         verify(mailService).sendRegistrationConfirmationEmail(token);
     }
+
+    @Test
+    void logoutUserTest() {
+
+        try (var jwtUtils = mockStatic(JwtUtils.class)) {
+            var mockClaims = mock(Claims.class);
+            var tgid = UUID.randomUUID().toString();
+            jwtUtils.when(() -> JwtUtils.extractValidClaimsFromHeader(anyString(), any(JwtType.class)))
+                    .thenReturn(Optional.of(mockClaims));
+            jwtUtils.when(() -> JwtUtils.extractTokenGroupIdFromClaims(any(Claims.class)))
+                    .thenReturn(tgid);
+
+            var header = "header";
+            accountUserService.logoutUser(header);
+            jwtUtils.verify(() -> JwtUtils.extractValidClaimsFromHeader(header, JwtType.REFRESH));
+            jwtUtils.verify(() -> JwtUtils.extractTokenGroupIdFromClaims(mockClaims));
+            verify(jwtService).blacklistTokenGroup(tgid);
+        }
+    }
 }
