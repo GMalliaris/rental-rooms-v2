@@ -1,6 +1,5 @@
 package org.gmalliaris.rental.rooms.config;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.ConstructorBinding;
 import org.springframework.validation.annotation.Validated;
@@ -39,7 +38,7 @@ public class JwtConfigurationProperties {
             refreshExpirationMinutes = REFRESH_TOKEN_MIN_EXPIRATION_MINUTES;
         }
         if (refreshExpirationThresholdSeconds == null) {
-            refreshExpirationThresholdSeconds = REFRESH_TOKEN_MIN_EXPIRATION_MINUTES;
+            refreshExpirationThresholdSeconds = REFRESH_TOKEN_EXPIRATION_MIN_THRESHOLD_SECONDS;
         }
 
         this.accessExpirationSeconds = accessExpirationSeconds;

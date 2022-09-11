@@ -302,8 +302,9 @@ class AccountUserServiceTest {
     void refreshAuthTokensTest_invalidClaims(){
         var header = "invalidHeader";
 
+        var userId = UUID.randomUUID();
         var exception = assertThrows(IllegalStateException.class,
-                () -> accountUserService.refreshAuthTokens(UUID.randomUUID(), header));
+                () -> accountUserService.refreshAuthTokens(userId, header));
         assertEquals("Invalid token, token group id is missing.", exception.getMessage());
     }
 
@@ -401,7 +402,6 @@ class AccountUserServiceTest {
         var user = mock(AccountUser.class);
         var tokenGroupId = UUID.randomUUID().toString();
         var exp = mock(Date.class);
-        var accessToken = "access";
         var refreshToken = "refreshToken";
 
         try(var jwtUtils = mockStatic(JwtUtils.class)) {

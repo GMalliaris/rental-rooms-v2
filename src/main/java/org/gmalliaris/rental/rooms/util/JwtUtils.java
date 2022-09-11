@@ -2,7 +2,6 @@ package org.gmalliaris.rental.rooms.util;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
-import org.apache.commons.lang3.StringUtils;
 import org.gmalliaris.rental.rooms.dto.JwtType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

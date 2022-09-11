@@ -1,6 +1,5 @@
 package org.gmalliaris.rental.rooms.controller;
 
-import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,7 +12,6 @@ import org.gmalliaris.rental.rooms.dto.CreateUserRequest;
 import org.gmalliaris.rental.rooms.dto.LoginRequest;
 import org.gmalliaris.rental.rooms.service.AccountUserService;
 import org.gmalliaris.rental.rooms.service.SecurityService;
-import org.gmalliaris.rental.rooms.util.JwtUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
