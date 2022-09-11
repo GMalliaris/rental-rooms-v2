@@ -28,6 +28,7 @@ class JwtConfigurationPropertiesTest {
     void defaultValuesTest() {
         assertEquals(120, jwtConfigurationProperties.getAccessExpirationSeconds());
         assertEquals(60, jwtConfigurationProperties.getRefreshExpirationMinutes());
+        assertEquals(120, jwtConfigurationProperties.getRefreshExpirationThresholdSeconds());
     }
 
     @ParameterizedTest
@@ -48,6 +49,15 @@ class JwtConfigurationPropertiesTest {
         assertEquals(errorsSize, errorSet.size());
     }
 
+    @ParameterizedTest
+    @MethodSource("provideRefreshExpirationThresholdSeconds")
+    void refreshExpirationThresholdSecondsTest(int value, int errorsSize) {
+        String refreshExpirationThresholdSeconds = "refreshExpirationThresholdSeconds";
+        ReflectionTestUtils.setField(jwtConfigurationProperties, refreshExpirationThresholdSeconds, value);
+        var errorSet = validator.validateProperty(jwtConfigurationProperties, refreshExpirationThresholdSeconds);
+        assertEquals(errorsSize, errorSet.size());
+    }
+
     private static Stream<Arguments> provideAccessExpirationSeconds() {
         return Stream.of(Arguments.of(119, 1),
                 Arguments.of(120, 0),
@@ -60,5 +70,12 @@ class JwtConfigurationPropertiesTest {
                 Arguments.of(15, 0),
                 Arguments.of(60, 0),
                 Arguments.of(61, 1));
+    }
+
+    private static Stream<Arguments> provideRefreshExpirationThresholdSeconds() {
+        return Stream.of(Arguments.of(59, 1),
+                Arguments.of(60, 0),
+                Arguments.of(300, 0),
+                Arguments.of(301, 1));
     }
 }
