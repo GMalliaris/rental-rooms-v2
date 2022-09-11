@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.HttpMethod;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,9 +43,6 @@ class AuthControllerIT implements PostgresTestContainer, MailHogTestContainer, R
 
     @Autowired
     private AccountUserRepository accountUserRepository;
-
-    @Autowired
-    private RedisTemplate<String, String> redisTemplate;
 
     @Test
     void adminUserExistsAndCanLogin() throws Exception {
