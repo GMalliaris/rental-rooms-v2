@@ -1,0 +1,18 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Unit Tests" type="JUnit" factoryName="JUnit">
+    <module name="rental-rooms" />
+    <option name="MAIN_CLASS_NAME" value="" />
+    <option name="METHOD_NAME" value="" />
+    <option name="TEST_OBJECT" value="pattern" />
+    <patterns>
+      <pattern testClass="org.gmalliaris.rental.rooms.controller.*" />
+      <pattern testClass="org.gmalliaris.rental.rooms.repository.*" />
+      <pattern testClass="org.gmalliaris.rental.rooms.util.*" />
+      <pattern testClass="org.gmalliaris.rental.rooms.service.*" />
+      <pattern testClass="org.gmalliaris.rental.rooms.config.*" />
+    </patterns>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
