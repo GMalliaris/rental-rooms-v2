@@ -11,7 +11,7 @@ public class PhoneNumberValidator implements ConstraintValidator<PhoneNumber, St
         if (s == null){
             return true;
         }
-        var pattern = Pattern.compile("^\\+(?:[0-9] ?){6,14}[0-9]$");
+        var pattern = Pattern.compile("^\\+(?:\\d ?){6,14}\\d$");
         var matcher = pattern.matcher(s);
 
         return matcher.find() && matcher.group().equals(s);

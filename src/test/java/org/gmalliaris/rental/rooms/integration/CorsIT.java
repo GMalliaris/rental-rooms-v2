@@ -1,6 +1,5 @@
 package org.gmalliaris.rental.rooms.integration;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.gmalliaris.rental.rooms.MailHogTestContainer;
 import org.gmalliaris.rental.rooms.PostgresTestContainer;
@@ -16,7 +15,6 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.gmalliaris.rental.rooms.RequestUtils.Auth.performLogin;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -25,7 +23,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @TestPropertySource(properties = "cors.allowedOrigins=http://localhost:3000,www.example.com")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-public class CorsIT  implements PostgresTestContainer, MailHogTestContainer, RedisTestContainer {
+class CorsIT  implements PostgresTestContainer, MailHogTestContainer, RedisTestContainer {
 
     @Autowired
     private MockMvc mockMvc;
