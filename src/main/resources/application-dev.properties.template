@@ -35,3 +35,7 @@ springdoc.packagesToScan=org.gmalliaris.rental.rooms.controller
 springdoc.override-with-generic-response=false
 springdoc.default-produces-media-type=application/json
 springdoc.swagger-ui.enabled=true
+
+spring.redis.host=
+spring.redis.port=
+spring.redis.password=
